@@ -25,7 +25,7 @@ import time
 
 parser = argparse.ArgumentParser("")
 parser.add_argument('--jobNum', type=int, default=1, help="")
-parser.add_argument('--dims', type=str, default="1", help="Comma separated list of types of plots to make. Can be '1', '2', '1,2'" )
+parser.add_argument('--dims', type=str, default="2", help="Comma separated list of types of plots to make. Can be '1', '2', '1,2'" )
 parser.add_argument('--doSyst', type=int, default=1, help="")
 parser.add_argument('--infile', type=str, default="", help="")
 parser.add_argument('--dataset', type=str, default="X", help="")
