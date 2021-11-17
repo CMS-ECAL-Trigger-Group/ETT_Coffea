@@ -106,7 +106,7 @@ for instance in modules_era:
         processor_instance=instance,
         executor=futures_executor,
         executor_args={  'workers' : 10, ##-- 4510?, 3?
-                         'retries' : 2,
+                         #'retries' : 2,
                     #    'savemetrics' : True,  
                       },
         chunksize=250000        
@@ -135,10 +135,10 @@ for instance in modules_era:
         "realVsEmu" : [[0, 256], [0, 256]],
         "emuOverRealvstwrADC" : [[1, 256], [0, 1.2]],
         "oneMinusEmuOverRealvstwrADC" : [[1, 256], [0, 1.2]],
-        # "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [0, 1.2]] 
+        "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [0, 1.2]] 
         # "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [-1, 1.2]] # 88, 'lo': -1, 'hi': 1.2
         # "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [-2, 1.2]] # 88, 'lo': -1, 'hi': 1.2
-        "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [-10, 1.2]] # 88, 'lo': -1, 'hi': 1.2
+        # "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [-10, 1.2]] # 88, 'lo': -1, 'hi': 1.2
     }
 
     # for h, hist in output[0].items(): ##-- output[0] if savemetrics is on

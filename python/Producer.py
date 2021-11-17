@@ -246,10 +246,10 @@ class ETT_NTuple(HistProducer):
             'axes' : {
                 # 'xaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
                 'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
-                # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 48, 'lo': 0, 'hi': 1.2}                
+                'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 48, 'lo': 0, 'hi': 1.2}                
                 # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 88, 'lo': -1, 'hi': 1.2}                
                 # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 128, 'lo': -2, 'hi': 1.2}                
-                'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 448, 'lo': -10, 'hi': 1.2}    ##-- 0.025 space bins in y axis             
+                # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 448, 'lo': -10, 'hi': 1.2}    ##-- 0.025 space bins in y axis             
             }
 
         },          
