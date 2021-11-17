@@ -1,3 +1,5 @@
+*.root
+*.png
 .__afs*
 jobs*/
 # Byte-compiled / optimized / DLL files
