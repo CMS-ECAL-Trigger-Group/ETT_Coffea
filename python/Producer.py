@@ -19,36 +19,37 @@ class HistProducer(ProcessorABC):
     histograms = NotImplemented
     selection = NotImplemented
 
-    # def __init__(self, era=2017, sample="DY", do_syst=False, syst_var='', weight_syst=False, haddFileName=None, flag=False):
-    def __init__(self, sample="DY", do_syst=False, syst_var='', weight_syst=False, haddFileName=None, flag=False):
+    def __init__(self, dim = "", do_syst=False, syst_var='', weight_syst=False, haddFileName=None, flag=False):
         self._flag = flag
+        self.dim = int(dim)
         self.do_syst = do_syst
-        # self.era = era
-        self.sample = sample
         self.syst_var, self.syst_suffix = (syst_var, f'_sys_{syst_var}') if do_syst and syst_var else ('', '')
         self.weight_syst = weight_syst
 
-        # ##-- 1d histograms
-        # self._accumulator = dict_accumulator({
-        #     name: Hist('Events', Bin(name=name, **axis))
-        #     for name, axis in ((self.naming_schema(hist['name'], region), hist['axis'])
-        #                        for _, hist in list(self.histograms.items())
-        #                        for region in hist['region'])
-        # })
+        # 1d histograms
+        if(self.dim == 1):
 
-        ##-- 2d histograms 
-        self._accumulator = dict_accumulator({
-            name: Hist('Events', Bin(name = axes['xaxis']['label'], **axes['xaxis']), Bin(name = axes['yaxis']['label'], **axes['yaxis'])) ##-- Make it 2d by specifying two Binnings 
-            for name, axes in ((self.naming_schema(hist['name'], region), hist['axes'])
-                               for _, hist in list(self.histograms.items())
-                               for region in hist['region'])
-        })        
+            self._accumulator = dict_accumulator({
+                name: Hist('Events', Bin(name=name, **axis))
+                for name, axis in ((self.naming_schema(hist['name'], region), hist['axis'])
+                                for _, hist in list(self.histograms_1d.items())
+                                for region in hist['region'])
+            })
+
+        # 2d histograms 
+        elif(self.dim == 2):
+            print("setting accum")
+            self._accumulator = dict_accumulator({
+                name: Hist('Events', Bin(name = axes['xaxis']['label'], **axes['xaxis']), Bin(name = axes['yaxis']['label'], **axes['yaxis'])) ##-- Make it 2d by specifying two Binnings 
+                for name, axes in ((self.naming_schema(hist['name'], region), hist['axes'])
+                                for _, hist in list(self.histograms_2d.items())
+                                for region in hist['region'])
+            })        
 
         self.outfile = haddFileName
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(sample: {self.sample}, do_syst: {self.do_syst}, syst_var: {self.syst_var}, weight_syst: {self.weight_syst}, output: {self.outfile})'
-        # return f'{self.__class__.__name__}(era: {self.era}, sample: {self.sample}, do_syst: {self.do_syst}, syst_var: {self.syst_var}, weight_syst: {self.weight_syst}, output: {self.outfile})'
+        return f'{self.__class__.__name__}(do_syst: {self.do_syst}, syst_var: {self.syst_var}, weight_syst: {self.weight_syst}, output: {self.outfile})'
 
     @property
     def accumulator(self):
@@ -57,56 +58,55 @@ class HistProducer(ProcessorABC):
     def process(self, df, *args):
         output = self.accumulator.identity()
 
-        # weight = self.weighting(df)
+        # 1d histograms 
+        if(self.dim == 1):
+            for h, hist in list(self.histograms_1d.items()):
+                for region in hist['region']:
 
-        # ##-- 1d histograms 
-        # for h, hist in list(self.histograms.items()):
-        #     for region in hist['region']:
+                    name = self.naming_schema(hist['name'], region)
+                    selec = self.passbut(df, hist['target'], region)
 
-        #         name = self.naming_schema(hist['name'], region)
-        #         selec = self.passbut(df, hist['target'], region)
+                    selectedValues = np.hstack(ak.to_list(df[hist['target']][selec])).flatten()
 
-        #         selectedValues = np.hstack(ak.to_list(df[hist['target']][selec])).flatten()
+                    output[name].fill(**{
+                        name: selectedValues
+                    })
 
-        #         output[name].fill(**{
-        #             # 'weight': weight[selec],
-        #             name: selectedValues
-        #         })
+                    del selectedValues               
 
-        #         del selectedValues   
 
-        ##-- 2d histograms 
-        for h, hist in list(self.histograms.items()):
-            for region in hist['region']:
+        elif(self.dim == 2):
+            for h, hist in list(self.histograms_2d.items()):
+                for region in hist['region']:
 
-                name = self.naming_schema(hist['name'], region)
-                selec = self.passbut(df, hist['target_x'], region) ##-- Should the selection depend on target?
-                # selec = self.passbut(df, region)
+                    name = self.naming_schema(hist['name'], region)
+                    selec = self.passbut(df, hist['target_x'], region) ##-- Should the selection depend on target?
+                    # selec = self.passbut(df, region)
 
-                xax_lab = hist['target_x']
-                # yax_lab = hist['target_y']
-                # yax_lab = "twrEmul3ADCOverTwrADC"
-                # yax_lab = "emuOverReal"
-                yax_lab = "oneMinusEmuOverRealvstwrADCCourseBinning"
+                    xax_lab = hist['target_x']
+                    yax_lab = hist['target_y']
+                    # yax_lab = "twrEmul3ADCOverTwrADC"
+                    # yax_lab = "emuOverReal"
+                    # yax_lab = "oneMinusEmuOverRealvstwrADCCourseBinning"
 
-                xVals = np.hstack(ak.to_list(df[hist['target_x']][selec])).flatten()
+                    xVals = np.hstack(ak.to_list(df[hist['target_x']][selec])).flatten()
+                    yVals = np.hstack(ak.to_list(df[hist['target_y']][selec])).flatten()
 
-                # yVals = np.hstack(ak.to_list(df[hist['target_y']][selec])).flatten()
-                # yVals = np.hstack(ak.to_list((np.divide(df["twrEmul3ADC"], df["twrADC"]))[selec])).flatten() ## 'target_y' : '(twrEmul3ADC/twrADC)',
-                yVals = np.hstack(ak.to_list((np.subtract(1., np.divide(df["twrEmul3ADC"], df["twrADC"])))[selec])).flatten() ## 'target_y' : '1 - (twrEmul3ADC/twrADC)',
+                    # yVals = np.hstack(ak.to_list((np.divide(df["twrEmul3ADC"], df["twrADC"]))[selec])).flatten() ## 'target_y' : '(twrEmul3ADC/twrADC)',
+                    # yVals = np.hstack(ak.to_list((np.subtract(1., np.divide(df["twrEmul3ADC"], df["twrADC"])))[selec])).flatten() ## 'target_y' : '1 - (twrEmul3ADC/twrADC)',
 
-                output[name].fill(**{
-                    xax_lab : xVals,
-                    yax_lab : yVals 
-                }
-                )
+                    output[name].fill(**{
+                        xax_lab : xVals,
+                        yax_lab : yVals 
+                    }
+                    )
 
-                del xVals
-                del yVals 
-                del name 
-                del selec 
-                del xax_lab
-                del yax_lab
+                    del xVals
+                    del yVals 
+                    del name 
+                    del selec 
+                    del xax_lab
+                    del yax_lab            
 
         return output
 
@@ -127,7 +127,6 @@ class ETT_NTuple(HistProducer):
         "three" : "3",
         "four" : "4"
     }
-    # times = ["all", "inTime", "Early", "Late", "VeryLate"]
     times = ["inTime", "Early", "Late", "VeryLate"]
 
     for severity in severities:
@@ -136,7 +135,8 @@ class ETT_NTuple(HistProducer):
             selname = "sev%s_%s"%(severity, time)
             SelectionsToRun.append(selname)   
 
-    histograms = {
+    # 1d histograms 
+    histograms_1d = {
 
         ##-- 1d histograms 
         # 'time': {
@@ -189,14 +189,14 @@ class ETT_NTuple(HistProducer):
         #     'axis': {'label': 'twrEmul3ADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}
         # },                 
 
-        # 'twrADC': {
-        #     'target': 'twrADC',
-        #     'name': 'twrADC', 
-        #     # 'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
-        #     # 'region': ['sevall_all', 'sevall_MostlyZeroed', 'sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
-        #     'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
-        #     'axis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
-        # }, 
+        'twrADC': {
+            'target': 'twrADC',
+            'name': 'twrADC', 
+            # 'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+            # 'region': ['sevall_all', 'sevall_MostlyZeroed', 'sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+            'region': ["clean"],
+            'axis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+        }, 
 
         # 'twrEmul3ADC': {
         #     'target': 'twrADC',
@@ -217,7 +217,10 @@ class ETT_NTuple(HistProducer):
 
         # },
 
-        ##-- 2d histograms 
+    }
+
+    # 2d histograms 
+    histograms_2d = {
 
         ##-- emu/real 
         # 'emuOverRealvstwrADC': {
@@ -236,23 +239,23 @@ class ETT_NTuple(HistProducer):
 
         # },  
 
-        ##-- 1 - emu/real 
-        'oneMinusEmuOverRealvstwrADCCourseBinning': {
-            'target_x' : 'twrADC',
-            # 'target_y' : '(twrEmul3ADC/twrADC)',
-            'target_y' : 'oneMinusEmuOverRealvstwrADCCourseBinning',
-            'name': 'oneMinusEmuOverRealvstwrADCCourseBinning', 
-            'region' : SelectionsToRun, 
-            'axes' : {
-                # 'xaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
-                'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
-                'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 48, 'lo': 0, 'hi': 1.2}                
-                # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 88, 'lo': -1, 'hi': 1.2}                
-                # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 128, 'lo': -2, 'hi': 1.2}                
-                # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 448, 'lo': -10, 'hi': 1.2}    ##-- 0.025 space bins in y axis             
-            }
+        # ##-- 1 - emu/real 
+        # 'oneMinusEmuOverRealvstwrADCCourseBinning': {
+        #     'target_x' : 'twrADC',
+        #     # 'target_y' : '(twrEmul3ADC/twrADC)',
+        #     'target_y' : 'oneMinusEmuOverRealvstwrADCCourseBinning',
+        #     'name': 'oneMinusEmuOverRealvstwrADCCourseBinning', 
+        #     'region' : SelectionsToRun, 
+        #     'axes' : {
+        #         # 'xaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
+        #         'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
+        #         'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 48, 'lo': 0, 'hi': 1.2}                
+        #         # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 88, 'lo': -1, 'hi': 1.2}                
+        #         # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 128, 'lo': -2, 'hi': 1.2}                
+        #         # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 448, 'lo': -10, 'hi': 1.2}    ##-- 0.025 space bins in y axis             
+        #     }
 
-        },          
+        # },  
 
         # 'EnergyVsTimeOccupancy': {
         #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
@@ -286,20 +289,20 @@ class ETT_NTuple(HistProducer):
 
         # },          
 
-        # 'realVsEmu': {
-        #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
-        #     'target_x' : 'twrEmul3ADC',
-        #     'target_y' : 'twrADC',
-        #     'name': 'realVsEmu', 
-        #     'region': ['sevall_all','sevzero_all', 'sevthree_all', 'sevfour_all'],
-        #     'axes' : {
-        #         # 'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
-        #         # 'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
-        #         'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256},
-        #         'yaxis': {'label': 'twrADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256}                
-        #     }
+        'realVsEmu': {
+            # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
+            'target_x' : 'twrEmul3ADC',
+            'target_y' : 'twrADC',
+            'name': 'realVsEmu', 
+            'region': ["clean"],
+            'axes' : {
+                # 'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
+                # 'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+                'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256},
+                'yaxis': {'label': 'twrADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256}                
+            }
 
-        # },  
+        },  
 
     }
 
@@ -319,8 +322,18 @@ class ETT_NTuple(HistProducer):
     }
     times = ["all", "inTime", "Early", "Late", "VeryLate"]
 
-    selection = {}
+    # Define selections based on event values 
+    # selection = {}
 
+    # basic ETT TP cleaning 
+    selection = {
+        "clean" : ["event.time != -999", # TP matched to (highest energy) rec hit in tower 
+                   "event.ttFlag != 4", # TP does not have TTF4. TTF4 is usually a masked or problematic TP 
+        ]
+    }
+
+    # based on severity and time 
+    """
     for severity in severities:
         sevNum = sevDict[severity]
         for time in times:
@@ -331,6 +344,7 @@ class ETT_NTuple(HistProducer):
                 selec_selections.append(timeSel)
             Selection_Name = "sev%s_%s"%(severity, time)
             selection[Selection_Name] = (selec_selections)
+    """ 
 
     def weighting(self, event: LazyDataFrame):
         weight = 1.0
