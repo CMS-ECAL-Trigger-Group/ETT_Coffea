@@ -14,15 +14,6 @@ import argparse
 from matplotlib.colors import LogNorm
 import time
 
-##-- Single file 
-# python3 condor_SUEP_WS.py --era=2018 --inDir="/afs/cern.ch/work/a/atishelm/private/CMS-ECAL-Trigger-Group/CMSSW_11_3_0/src/ECALDoubleWeights/ETTAnalyzer/SingleFile/" --treename="ETTAnalyzerTree" --outDir="/eos/user/a/atishelm/www/EcalL1Optimization/ZeroBias_singleFile/" --condor="0"
-
-##-- All blocks 
-# python3 condor_SUEP_WS.py --era=2018 --inDir="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly/210626_062710/" --treename="ETTAnalyzerTree" --outDir="/eos/user/a/atishelm/www/EcalL1Optimization/ZeroBias_allBlocks/"
-# python3 condor_SUEP_WS.py --era=2018 --inDir="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018/ETTAnalyzer_CMSSW_11_3_0_StripZeroing/210625_062523/" --treename="ETTAnalyzerTree" --outDir="/eos/user/a/atishelm/www/EcalL1Optimization/ZeroBias_allBlocks/"
-# python3 condor_SUEP_WS.py --era=2018 --inDir="/eos/user/a/atishelm/ntuples/EcalL1Optimization/ETTAnalyzer/ZeroBias/ETTAnalyzer_CMSSW_11_3_0/210622_190129/0000/" --treename="ETTAnalyzerTree"
-# python3 condor_SUEP_WS.py --era=2018 --inDir="/eos/user/a/atishelm/ntuples/EcalL1Optimization/ETTAnalyzer/ZeroBias/ETTAnalyzer_CMSSW_11_3_0/210622_190129/SingleFile/" --treename="ETTAnalyzerTree"
-
 parser = argparse.ArgumentParser("")
 parser.add_argument('--jobNum', type=int, default=1, help="")
 parser.add_argument('--dims', type=str, default="2", help="Comma separated list of types of plots to make. Can be '1', '2', '1,2'" )
@@ -82,10 +73,6 @@ else:
             filesToRun.append(os.path.join(root, name))    
     print("Number of input files:",len(filesToRun))
 
-    # files = ["%s/%s"%(options.inDir,f) for f in os.listdir(options.inDir) if f.endswith(".root")]
-
-# f = uproot.recreate("ETT_histograms_%s.root" % str(options.jobNum))
-
 # Create output directory 
 ol = options.outDir
 if(not os.path.isdir(ol)):
@@ -135,8 +122,18 @@ for instance in modules:
 
         twod_plot_labels = ["EnergyVsTimeOccupancy", "EBOcc", "realVsEmu", "emuOverRealvstwrADC", "oneMinusEmuOverRealvstwrADC", "oneMinusEmuOverRealvstwrADCCourseBinning"]
 
+        mapColorDict = {
+            "EnergyVsTimeOccupancy" : "jet",
+            "realVsEmu" : "Blues",
+            "emuOverRealvstwrADC" : "jet",
+            "oneMinusEmuOverRealvstwrADC" : "jet",
+            "oneMinusEmuOverRealvstwrADCCourseBinning" : "jet"                      
+
+        }
+
         binDict = {
-            "EnergyVsTimeOccupancy" : [[-50, 50], [1, 256]],
+            # "EnergyVsTimeOccupancy" : [[-50, 50], [1, 256]],
+            "EnergyVsTimeOccupancy" : [[-50, 50], [0, 35]],
             "EBOcc" : [[0, 80], [-18, 18]],
             "realVsEmu" : [[0, 256], [0, 256]],
             "emuOverRealvstwrADC" : [[1, 256], [0, 1.2]],
@@ -202,7 +199,7 @@ for instance in modules:
             ##-- Condor
             if(options.condor):
                 # pickle.dump( yields, open( '%s_yields.p'%(h), "wb" )) ##-- per severity, selection 
-                pickle.dump( values, open( '%s_values.p'%(h), "wb" ))  
+                pickle.dump( values, open( '%s_values.p'%(h), "wb" ))  # on condor, this then gets transferred from the condor area to your output location 
                 # if("emuOverRealvstwrADC" in h):
                     # pickle.dump( sliceValues, open( '%s_sliceValues.p'%(h), "wb" ))
 
@@ -210,7 +207,10 @@ for instance in modules:
             else: 
                 # pickle.dump( yields, open( '%s/%s_yields.p'%(ol, histName), "wb" ))
                 pickle.dump( values, open( '%s/%s_values.p'%(ol, histName), "wb" ))
-                mapColor = "Blues" ##-- For real vs. emu TP
+                for twod_plot_label in twod_plot_labels:
+                    if(twod_plot_label in h):
+                        mapColor = mapColorDict[twod_plot_label]
+
                 ax = plot2d(
                     hist, 
                     xaxis = xaxis,
@@ -251,3 +251,6 @@ for instance in modules:
 
                 print("Saved plot %s/%s.png"%(ol, histName))
                 print("Saved plot %s/%s.pdf"%(ol, histName))
+
+
+# 'Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'BuGn', 'BuGn_r', 'BuPu', 'BuPu_r', 'CMRmap', 'CMRmap_r', 'Dark2', 'Dark2_r', 'GnBu', 'GnBu_r', 'Greens', 'Greens_r', 'Greys', 'Greys_r', 'OrRd', 'OrRd_r', 'Oranges', 'Oranges_r', 'PRGn', 'PRGn_r', 'Paired', 'Paired_r', 'Pastel1', 'Pastel1_r', 'Pastel2', 'Pastel2_r', 'PiYG', 'PiYG_r', 'PuBu', 'PuBuGn', 'PuBuGn_r', 'PuBu_r', 'PuOr', 'PuOr_r', 'PuRd', 'PuRd_r', 'Purples', 'Purples_r', 'RdBu', 'RdBu_r', 'RdGy', 'RdGy_r', 'RdPu', 'RdPu_r', 'RdYlBu', 'RdYlBu_r', 'RdYlGn', 'RdYlGn_r', 'Reds', 'Reds_r', 'Set1', 'Set1_r', 'Set2', 'Set2_r', 'Set3', 'Set3_r', 'Spectral', 'Spectral_r', 'Wistia', 'Wistia_r', 'YlGn', 'YlGnBu', 'YlGnBu_r', 'YlGn_r', 'YlOrBr', 'YlOrBr_r', 'YlOrRd', 'YlOrRd_r', 'afmhot', 'afmhot_r', 'autumn', 'autumn_r', 'binary', 'binary_r', 'bone', 'bone_r', 'brg', 'brg_r', 'bwr', 'bwr_r', 'cividis', 'cividis_r', 'cool', 'cool_r', 'coolwarm', 'coolwarm_r', 'copper', 'copper_r', 'cubehelix', 'cubehelix_r', 'flag', 'flag_r', 'gist_earth', 'gist_earth_r', 'gist_gray', 'gist_gray_r', 'gist_heat', 'gist_heat_r', 'gist_ncar', 'gist_ncar_r', 'gist_rainbow', 'gist_rainbow_r', 'gist_stern', 'gist_stern_r', 'gist_yarg', 'gist_yarg_r', 'gnuplot', 'gnuplot2', 'gnuplot2_r', 'gnuplot_r', 'gray', 'gray_r', 'hot', 'hot_r', 'hsv', 'hsv_r', 'inferno', 'inferno_r', 'jet', 'jet_r', 'magma', 'magma_r', 'nipy_spectral', 'nipy_spectral_r', 'ocean', 'ocean_r', 'pink', 'pink_r', 'plasma', 'plasma_r', 'prism', 'prism_r', 'rainbow', 'rainbow_r', 'seismic', 'seismic_r', 'spring', 'spring_r', 'summer', 'summer_r', 'tab10', 'tab10_r', 'tab20', 'tab20_r', 'tab20b', 'tab20b_r', 'tab20c', 'tab20c_r', 'terrain', 'terrain_r', 'turbo', 'turbo_r', 'twilight', 'twilight_r', 'twilight_shifted', 'twilight_shifted_r', 'viridis', 'viridis_r', 'winter', 'winter_r'

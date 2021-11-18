@@ -1,10 +1,20 @@
-##-- Example command: 
-# python RunProducer_Condor.py --tag=
+"""
+18 November 2021 
 
-##-- example command: python run_SUEPProducer.py --era=2018 --tag=210628_214348
-##-- example command: python run_SUEPProducer.py --era=2018 --tag=210809_140837
-##-- Thank you: https://research.cs.wisc.edu/htcondor/manual/v8.5/condor_submit.html
-# https://github.com/htcondor/htcondor/blob/abbf76f596e935d5f2c2645e439cb3bee2eef9a7/src/condor_starter.V6.1/docker_proc.cpp ##-- Docker/HTCondor under the hood 
+The purpose of this module is to submit condor jobs to run the ETT coffea producer. 
+
+Example commands:
+
+2021 pilot beam analysis:
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_346446_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeightsTaggingMode/" --tag=211115_170649
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeightsTaggingMode/" --tag=211116_115908
+
+Misc:
+
+Thank you: https://research.cs.wisc.edu/htcondor/manual/v8.5/condor_submit.html
+https://github.com/htcondor/htcondor/blob/abbf76f596e935d5f2c2645e439cb3bee2eef9a7/src/condor_starter.V6.1/docker_proc.cpp ##-- Docker/HTCondor under the hood 
+
+"""
 
 import os, sys
 import argparse
@@ -80,6 +90,7 @@ initialdir            = {jobdir}
 
 # real vs emu 
 transfer_output_remaps = "realVsEmu_clean_values.p={output_dir}/realVsEmu_clean_values_$(ProcId).p"
+transfer_output_remaps = "EnergyVsTimeOccupancy_clean_all_values.p={output_dir}/EnergyVsTimeOccupancy_clean_all_values_$(ProcId).p;EnergyVsTimeOccupancy_clean_tagged_values.p={output_dir}/EnergyVsTimeOccupancy_clean_tagged_values_$(ProcId).p"
 
 #Requirements = HasSingularity
 +JobFlavour           = "{queue}"
@@ -99,11 +110,11 @@ def main():
     parser.add_argument("-f"   , "--force" , action="store_true"          , help="recreate files and jobs")
     parser.add_argument("-s"   , "--submit", action="store_true"          , help="submit only")
     parser.add_argument("-dry" , "--dryrun", action="store_true"          , help="running without submission")
+    parser.add_argument("--direc", type = str , help="Directory with input files")
 
     options = parser.parse_args()
 
-    # indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly_FixedOccProportion/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly_FixedOccProportion/{}/".format(options.tag)
-    indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_346446_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeightsTaggingMode/{}/".format(options.tag)
+    indir = "{}/{}/".format(options.direc, options.tag)
 
     for sample in os.listdir(indir):
         if "merged" in sample:
@@ -131,6 +142,8 @@ def main():
             for name in in_files:
                 infiles.write(name+"\n")
             infiles.close()
+        #var = args.var 
+        # outdir = indir + sample + "_output/{var}/".format(var=var) # could try something like this for each output variable..or maybe need to specify output direc for each variable in .sh file. 
         outdir = indir + sample + "_output/"
         os.system("mkdir -p {}".format(outdir))
 

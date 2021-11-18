@@ -257,21 +257,18 @@ class ETT_NTuple(HistProducer):
 
         # },  
 
-        # 'EnergyVsTimeOccupancy': {
-        #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
-        #     'target_x' : 'time',
-        #     'target_y' : 'twrADC',
-        #     'name': 'EnergyVsTimeOccupancy', 
-        #     'region' : ['sevzero_all', 'sevzero_MostlyZeroed',
-        #                 'sevthree_all', 'sevthree_MostlyZeroed',
-        #                 'sevfour_all', 'sevfour_MostlyZeroed'
-        #                ],
-        #     'axes' : {
-        #         'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
-        #         'yaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}                
-        #     }
+        'EnergyVsTimeOccupancy': {
+            # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
+            'target_x' : 'time',
+            'target_y' : 'twrADC',
+            'name': 'EnergyVsTimeOccupancy', 
+            'region' : ['clean_all', 'clean_tagged'],
+            'axes' : {
+                'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
+                'yaxis': {'label': 'twrADC', 'n_or_arr': 35, 'lo': 0, 'hi': 35}                
+            }
 
-        # },  
+        },  
 
         # 'EBOcc': {
         #     'target_x' : 'iphi',
@@ -289,20 +286,20 @@ class ETT_NTuple(HistProducer):
 
         # },          
 
-        'realVsEmu': {
-            # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
-            'target_x' : 'twrEmul3ADC',
-            'target_y' : 'twrADC',
-            'name': 'realVsEmu', 
-            'region': ["clean"],
-            'axes' : {
-                'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
-                'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
-                # 'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256},
-                # 'yaxis': {'label': 'twrADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256}                
-            }
+        # 'realVsEmu': {
+        #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
+        #     'target_x' : 'twrEmul3ADC',
+        #     'target_y' : 'twrADC',
+        #     'name': 'realVsEmu', 
+        #     'region': ["clean"],
+        #     'axes' : {
+        #         'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
+        #         'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+        #         # 'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256},
+        #         # 'yaxis': {'label': 'twrADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256}                
+        #     }
 
-        },  
+        # },  
 
     }
 
@@ -327,8 +324,13 @@ class ETT_NTuple(HistProducer):
 
     # basic ETT TP cleaning 
     selection = {
-        "clean" : ["event.time != -999", # TP matched to (highest energy) rec hit in tower 
+        "clean_all" : ["event.time != -999", # TP matched to (highest energy) rec hit in tower 
                    "event.ttFlag != 4", # TP does not have TTF4. TTF4 is usually a masked or problematic TP 
+        ],
+        "clean_tagged" : [
+            "event.time != -999",
+            "event.ttFlag != 4",
+            "event.FineGrainBit == 1" # tagged by double weights in tagging mode 
         ]
     }
 
