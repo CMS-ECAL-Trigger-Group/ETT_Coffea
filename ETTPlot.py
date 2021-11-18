@@ -53,6 +53,9 @@ if(__name__ == '__main__'):
         total_values = np.add(values_0, values_1)
 
         for i in range(n_files):
+            if(i > maxFiles):
+                print("Max files reached: ",i)
+                break 
             if(i == 0 or i == 1): continue 
             if(i%10 == 0): print("on file %s / %s"%(i, n_files))
 
@@ -68,12 +71,14 @@ if(__name__ == '__main__'):
     files_2 = ["%s/%s"%(direc_2, f) for f in os.listdir(direc_2) if varLabel in f]
 
     for file_i,file in enumerate(files_2):
+        if(i > maxFiles):
+            print("Max files reached: ",i)
+            break         
         if(file_i%10 == 0): print("on file %s / %s"%(file_i, len(files_2)))
 
         thisValues = pickle.load(open(file, "rb"))
         # exec('thisValues = pickle.load(open("%s"%(file), "rb"))')  
         total_values = np.add(total_values, thisValues)     
-    
 
     # Plot 
     for selection in selections:
@@ -81,7 +86,9 @@ if(__name__ == '__main__'):
         exec("Values_array = %s_%s_values"%(varLabel, selection))
         isRatio = 0 
         plotText = selection
-        MakeETTPlot(Values_array, varLabel, selection, doSymLog, 0, plotText)
+        if("all" in selection):
+            vmaxAll = np.max(Values_array)
+        MakeETTPlot(Values_array, varLabel, selection, doSymLog, 0, plotText, vmaxAll)
 
     # take ratio 
     if(("clean_all" in selections) and ("clean_tagged" in selections)):
@@ -96,6 +103,7 @@ if(__name__ == '__main__'):
         fraction = np.divide(tagged_values, total_values, out=np.zeros_like(tagged_values), where=total_values!=0)
         isRatio = 1 
         doSymLog = 0 
-        MakeETTPlot(fraction, "%s_ratio"%(varLabel), "clean", doSymLog, isRatio, plotText)
+        plotText = "Tagged / Total"
+        MakeETTPlot(fraction, "%s_ratio"%(varLabel), "clean", doSymLog, isRatio, plotText, vmaxAll)
 
     print("DONE")    

@@ -99,7 +99,7 @@ def GetPlotLabels(varLabel_):
 
     return labelDict[varLabel_]     
 
-def MakeETTPlot(Values_array, varLabel, selection, doSymLog, isRatio):
+def MakeETTPlot(Values_array, varLabel, selection, doSymLog, isRatio, plotText, vmaxAll):
 
     # parameters 
     upperRightText = "Pilot Beam 2021"
@@ -139,21 +139,48 @@ def MakeETTPlot(Values_array, varLabel, selection, doSymLog, isRatio):
     #xbins = np.linspace(0, xmax, int(xmax)+1)
     #ybins = np.linspace(0, ymax, int(ymax)+1)
 
+    # if("Tagged" in selection):
+    #     vmax = vmaxAll
+    # else:
+    #     vmax = None
+
+    if("tagged" in selection):
+        print("Setting clim")
+        vmax = vmaxAll
+    else:
+        vmax = None
+        # plt.clim(0, vmaxAll)
+
     # plot with colormesh 
-    if(isRatio): vmin = 0.00000001
-    else: vmin = 1 
-    if(doSymLog): norm = norm = SymLogNorm(linthresh=0.03, vmin = vmin)
-    else: norm = None 
+    if(isRatio): 
+        vmin = 0.00000001
+    else: 
+        vmin = 1 
+    if(doSymLog): 
+        norm = norm = SymLogNorm(linthresh=0.03, vmin = vmin)
+    else: 
+        norm = None 
     pos = ax.pcolormesh(xbins, 
                         ybins, 
                         Values_array.transpose(1,0), 
                         cmap = cmap, 
                         vmin = vmin,
+                        vmax = vmax,
                         norm = norm
                         )
     cb = fig.colorbar(pos, 
                     ax=ax,
                 )    
+
+    # object_methods = [method_name for method_name in dir(cb)
+                #   if callable(getattr(cb, method_name))]
+
+    # print("object_methods:",object_methods)
+
+    # cmin, cmax = cb.get_clim()
+    # if("tagged" in selection):
+    #     print("Setting clim")
+    #     plt.clim(0, vmaxAll)
 
     #ax.matshow(Values_array, cmap='seismic')
 
@@ -188,6 +215,17 @@ def MakeETTPlot(Values_array, varLabel, selection, doSymLog, isRatio):
     Add_CMS_Header(plt, ax, upperRightText, text_xmin)
 
     plt.grid()
+    plotText = plotText.replace("clean_", "")
+    plt.text(
+        0.1, 0.75, plotText,
+        fontsize=30, fontweight='bold',
+        horizontalalignment='left',
+        verticalalignment='bottom',
+        transform=ax.transAxes
+    )
+
+    # if(isRatio): plt.set_zlim(thisZmin,zmax_)
+    
     ol = "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/"
     plt.xticks(fontsize = 20)
     plt.yticks(fontsize = 20)
