@@ -53,7 +53,7 @@ def SetYMin(Values_array_, ymin_, binWidth_):
     Transformed_List = np.array(Transformed_List)
     return Transformed_List
 
-def SetYMax(Values_array_, ymax_, binWidth_):
+def SetYMax(Values_array_, ymax_, binWidth_, ybins):
     Transformed_List = [] 
     ymax_bin_i = ymax_ # for [0, 256] with 1 spaced binnings 
     for i, xBinVals in enumerate(Values_array_):
@@ -62,7 +62,10 @@ def SetYMax(Values_array_, ymax_, binWidth_):
         xBinVals = xBinVals[MASK]
         Transformed_List.append(xBinVals)        
     Transformed_List = np.array(Transformed_List)
-    return Transformed_List
+
+    ybins = np.linspace(0, int(ymax_), int(ymax_)+1) # assumes starting at zero and binwidth of 1 
+
+    return [Transformed_List, ybins]
 
 def SetXMax(Values_array_, xmax_, binWidth_): # as you loop the Values_array, each object is a y slice starting from the left 
     Transformed_List = [] 
@@ -99,7 +102,7 @@ def GetPlotLabels(varLabel_):
 
     return labelDict[varLabel_]     
 
-def MakeETTPlot(Values_array, varLabel, selection, doSymLog, isRatio, plotText, vmaxAll):
+def MakeETTPlot(Values_array, varLabel, selection, doSymLog, isRatio, plotText_params, vmaxAll, ymax, zmax):
 
     # parameters 
     upperRightText = "Pilot Beam 2021"
@@ -114,8 +117,6 @@ def MakeETTPlot(Values_array, varLabel, selection, doSymLog, isRatio, plotText, 
     # cmap = plt.cm.RdBu_r # for sym log 
     cmap = plt.cm.jet
     cmap.set_under(color='white') 
-
-    #exec("Values_array = %s_%s_values"%(varLabel, selection))    
 
     xbins, ybins = GetBins(varLabel)
 
@@ -139,13 +140,21 @@ def MakeETTPlot(Values_array, varLabel, selection, doSymLog, isRatio, plotText, 
     #xbins = np.linspace(0, xmax, int(xmax)+1)
     #ybins = np.linspace(0, ymax, int(ymax)+1)
 
+    binWidth = 1 
+    # print("Before:")
+    # for i,thing in enumerate(Values_array):
+        # print("%s: %s"%(i, thing))
+    Values_array, ybins = SetYMax(Values_array, ymax, binWidth, ybins)
+    # print("After:")
+    # for i,thing in enumerate(Values_array):
+        # print("%s: %s"%(i, thing))    
+
     # if("Tagged" in selection):
     #     vmax = vmaxAll
     # else:
     #     vmax = None
 
     if("tagged" in selection):
-        print("Setting clim")
         vmax = vmaxAll
     else:
         vmax = None
@@ -160,6 +169,10 @@ def MakeETTPlot(Values_array, varLabel, selection, doSymLog, isRatio, plotText, 
         norm = norm = SymLogNorm(linthresh=0.03, vmin = vmin)
     else: 
         norm = None 
+
+    if(zmax != -1):
+        vmax = zmax 
+
     pos = ax.pcolormesh(xbins, 
                         ybins, 
                         Values_array.transpose(1,0), 
@@ -215,17 +228,18 @@ def MakeETTPlot(Values_array, varLabel, selection, doSymLog, isRatio, plotText, 
     Add_CMS_Header(plt, ax, upperRightText, text_xmin)
 
     plt.grid()
+    plotText, addPlotText = plotText_params
     plotText = plotText.replace("clean_", "")
-    plt.text(
-        0.1, 0.75, plotText,
-        fontsize=30, fontweight='bold',
-        horizontalalignment='left',
-        verticalalignment='bottom',
-        transform=ax.transAxes
-    )
 
-    # if(isRatio): plt.set_zlim(thisZmin,zmax_)
-    
+    if(addPlotText):
+        plt.text(
+            0.1, 0.75, plotText,
+            fontsize=30, fontweight='bold',
+            horizontalalignment='left',
+            verticalalignment='bottom',
+            transform=ax.transAxes
+        )
+
     ol = "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/"
     plt.xticks(fontsize = 20)
     plt.yticks(fontsize = 20)

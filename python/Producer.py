@@ -38,7 +38,6 @@ class HistProducer(ProcessorABC):
 
         # 2d histograms 
         elif(self.dim == 2):
-            print("setting accum")
             self._accumulator = dict_accumulator({
                 name: Hist('Events', Bin(name = axes['xaxis']['label'], **axes['xaxis']), Bin(name = axes['yaxis']['label'], **axes['yaxis'])) ##-- Make it 2d by specifying two Binnings 
                 for name, axes in ((self.naming_schema(hist['name'], region), hist['axes'])
@@ -61,10 +60,11 @@ class HistProducer(ProcessorABC):
         # 1d histograms 
         if(self.dim == 1):
             for h, hist in list(self.histograms_1d.items()):
+                variable_name = hist['name']
                 for region in hist['region']:
 
                     name = self.naming_schema(hist['name'], region)
-                    selec = self.passbut(df, hist['target'], region)
+                    selec = self.passbut(df, hist['target'], region, variable_name)
 
                     selectedValues = np.hstack(ak.to_list(df[hist['target']][selec])).flatten()
 
@@ -77,23 +77,29 @@ class HistProducer(ProcessorABC):
 
         elif(self.dim == 2):
             for h, hist in list(self.histograms_2d.items()):
+                variable_name = hist['name']
                 for region in hist['region']:
+                    print("region:",region)
 
                     name = self.naming_schema(hist['name'], region)
-                    selec = self.passbut(df, hist['target_x'], region) ##-- Should the selection depend on target?
-                    # selec = self.passbut(df, region)
+                    selec = self.passbut(df, hist['target_x'], region, variable_name) ##-- Should the selection depend on target?
 
                     xax_lab = hist['target_x']
                     yax_lab = hist['target_y']
-                    # yax_lab = "twrEmul3ADCOverTwrADC"
-                    # yax_lab = "emuOverReal"
-                    # yax_lab = "oneMinusEmuOverRealvstwrADCCourseBinning"
 
                     xVals = np.hstack(ak.to_list(df[hist['target_x']][selec])).flatten()
-                    yVals = np.hstack(ak.to_list(df[hist['target_y']][selec])).flatten()
 
-                    # yVals = np.hstack(ak.to_list((np.divide(df["twrEmul3ADC"], df["twrADC"]))[selec])).flatten() ## 'target_y' : '(twrEmul3ADC/twrADC)',
-                    # yVals = np.hstack(ak.to_list((np.subtract(1., np.divide(df["twrEmul3ADC"], df["twrADC"])))[selec])).flatten() ## 'target_y' : '1 - (twrEmul3ADC/twrADC)',
+                    # for this variable, seems I need to specify the computation
+                    if(variable_name == "oneMinusEmuOverRealvstwrADCCourseBinning"):
+                        #print("min value:",min(ak.to_list(df["twrADC"]).flatten()))
+                        yVals = np.hstack(ak.to_list((np.subtract(1., np.divide(df["twrEmul3ADC"], df["twrADC"])))[selec])).flatten() ## 'target_y' : '1 - (twrEmul3ADC/twrADC)',
+
+                        # yVals = np.hstack(ak.to_list((np.subtract(1., np.divide(df["twrEmul3ADC"], df["twrADC"], out=np.zeros_like(df["twrEmul3ADC"]), where=df["twrADC"]!=0)))[selec])).flatten() ## 'target_y' : '1 - (twrEmul3ADC/twrADC)',
+                        # np.divide(a, b, out=np.zeros_like(a), where=b!=0)
+                        #yVals = np.hstack(ak.to_list((np.divide(df["twrEmul3ADC"], df["twrADC"]))[selec])).flatten() ## 'target_y' : '(twrEmul3ADC/twrADC)',
+
+                    else:
+                        yVals = np.hstack(ak.to_list(df[hist['target_y']][selec])).flatten() # read from target_y 
 
                     output[name].fill(**{
                         xax_lab : xVals,
@@ -113,21 +119,38 @@ class HistProducer(ProcessorABC):
     def postprocess(self, accumulator):
         return accumulator
 
-    def passbut(self, event: LazyDataFrame, excut: str, cat: str):
+    def passbut(self, event: LazyDataFrame, excut: str, cat: str, variable_name: str):
         """Backwards-compatible passbut."""
-        return eval('&'.join('(' + cut.format(sys=('' if self.weight_syst else self.syst_suffix)) + ')' for cut in self.selection[cat] ))#if excut not in cut))
+        #print("cat:",cat)
+        #print("cuts:",self.selection[cat])
+        #return eval('&'.join('(' + cut.format(sys=('' if self.weight_syst else self.syst_suffix)) + ')' for cut in self.selection[cat] ))#if excut not in cut))
+
+        if(variable_name == "oneMinusEmuOverRealvstwrADCCourseBinning"): # add selection to not include TPs with ET = 0 
+            evalStr = '&'.join('(' + cut.format(sys=('' if self.weight_syst else self.syst_suffix)) + ')' for cut in self.selection[cat] )
+            evalStr += '&(event.twrADC != 0)'
+            return eval(evalStr)#if excut not in cut))
+        else: 
+            return eval('&'.join('(' + cut.format(sys=('' if self.weight_syst else self.syst_suffix)) + ')' for cut in self.selection[cat] ))#if excut not in cut))
 
 class ETT_NTuple(HistProducer):
 
     SelectionsToRun = []
 
-    severities = ["zero", "three", "four"]
+    # severities = ["zero", "three", "four"]
+    # times = ["all", "inTime", "Early", "Late", "VeryLate"]
     sevDict = {
         "zero" : "0",
         "three" : "3",
         "four" : "4"
     }
-    times = ["inTime", "Early", "Late", "VeryLate"]
+
+    # all 
+    severities = ["zero", "three", "four"]
+    times = ["all", "inTime", "Early", "Late", "VeryLate"]
+
+    # # less 
+    #severities = ["zero"]
+    times = ["all"]
 
     for severity in severities:
         for time in times:
@@ -239,30 +262,42 @@ class ETT_NTuple(HistProducer):
 
         # },  
 
-        # ##-- 1 - emu/real 
-        # 'oneMinusEmuOverRealvstwrADCCourseBinning': {
-        #     'target_x' : 'twrADC',
-        #     # 'target_y' : '(twrEmul3ADC/twrADC)',
-        #     'target_y' : 'oneMinusEmuOverRealvstwrADCCourseBinning',
-        #     'name': 'oneMinusEmuOverRealvstwrADCCourseBinning', 
-        #     'region' : SelectionsToRun, 
-        #     'axes' : {
-        #         # 'xaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
-        #         'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
-        #         'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 48, 'lo': 0, 'hi': 1.2}                
-        #         # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 88, 'lo': -1, 'hi': 1.2}                
-        #         # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 128, 'lo': -2, 'hi': 1.2}                
-        #         # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 448, 'lo': -10, 'hi': 1.2}    ##-- 0.025 space bins in y axis             
-        #     }
 
-        # },  
+        """
+        Useful for evaluating effect of emulation, e.g. double weights, on digis
+        """
+
+        ##-- 1 - emu/real 
+        'oneMinusEmuOverRealvstwrADCCourseBinning': {
+            'target_x' : 'twrADC',
+            # 'target_y' : '(twrEmul3ADC/twrADC)',
+            'target_y' : 'oneMinusEmuOverRealvstwrADCCourseBinning',
+            'name': 'oneMinusEmuOverRealvstwrADCCourseBinning', 
+            'region' : SelectionsToRun, 
+            'axes' : {
+                # 'xaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
+                # 'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
+                'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0], 'lo': 1, 'hi': 40}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
+                # 'xaxis': {'label': 'twrADC', 'n_or_arr': 40, 'lo': 1, 'hi': 41}, 
+                'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 48, 'lo': 0, 'hi': 1.2}                
+                # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 88, 'lo': -1, 'hi': 1.2}                
+                # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 128, 'lo': -2, 'hi': 1.2}                
+                # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 448, 'lo': -10, 'hi': 1.2}    ##-- 0.025 space bins in y axis             
+            }
+
+        },  
+
+        """
+        Useful for exploring the data
+        """
 
         'EnergyVsTimeOccupancy': {
             # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
             'target_x' : 'time',
             'target_y' : 'twrADC',
             'name': 'EnergyVsTimeOccupancy', 
-            'region' : ['clean_all', 'clean_tagged'],
+            # 'region' : ['clean_all', 'clean_tagged'],
+            'region' : SelectionsToRun,
             'axes' : {
                 'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
                 'yaxis': {'label': 'twrADC', 'n_or_arr': 35, 'lo': 0, 'hi': 35}                
@@ -304,11 +339,11 @@ class ETT_NTuple(HistProducer):
     }
 
     time_regions = {
-        "all" : ["1"],
-        "inTime" : ["event.time < 3", "event.time > -3"],
+        "all" : ["event.time != -999"],
+        "inTime" : ["event.time < 3", "event.time >= -3"],
         "Early" : ["event.time < -3"],
-        "Late" : ["event.time > 3", "event.time < 10"],
-        "VeryLate" : ["event.time > 10"]
+        "Late" : ["event.time >= 3", "event.time < 10"],
+        "VeryLate" : ["event.time >= 10"]
     }
 
     severities = ["zero", "three", "four"]
@@ -320,33 +355,42 @@ class ETT_NTuple(HistProducer):
     times = ["all", "inTime", "Early", "Late", "VeryLate"]
 
     # Define selections based on event values 
-    # selection = {}
+    selection = {}
 
     # basic ETT TP cleaning 
+    """
     selection = {
         "clean_all" : ["event.time != -999", # TP matched to (highest energy) rec hit in tower 
                    "event.ttFlag != 4", # TP does not have TTF4. TTF4 is usually a masked or problematic TP 
         ],
         "clean_tagged" : [
             "event.time != -999",
-            "event.ttFlag != 4",
-            "event.FineGrainBit == 1" # tagged by double weights in tagging mode 
+            "event.ttFlag != 4"
+            #"event.FineGrainBit == 1" # tagged by double weights in tagging mode 
         ]
     }
+    """
 
     # based on severity and time 
-    """
+    #"""
+    selection = {}
+
     for severity in severities:
         sevNum = sevDict[severity]
         for time in times:
             selec_selections = []
+            selec_selections.append("event.ttFlag != 4") # add TTF4 cleaning for all severities, times. 
+            selec_selections.append("event.time != -999") # don't include TPs which were not matched to a recHit 
+            #selec_selections.append("event.twrADC != 0") # for anything with dividing, don't include TP = 0 ET entries
             selec_selections.append("event.sevlv == %s"%(sevNum))
             timeSels = time_regions[time]
             for timeSel in timeSels:
                 selec_selections.append(timeSel)
             Selection_Name = "sev%s_%s"%(severity, time)
+            print("Selection name:",Selection_Name)
+            print("selec_selections:",selec_selections)
             selection[Selection_Name] = (selec_selections)
-    """ 
+    #""" 
 
     def weighting(self, event: LazyDataFrame):
         weight = 1.0

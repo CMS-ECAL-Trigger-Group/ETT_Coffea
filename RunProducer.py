@@ -111,7 +111,6 @@ for instance in modules:
     # 2d histograms 
     elif(dim == 2):
 
-
         ##-- https://coffeateam.github.io/coffea/notebooks/histograms.html
         ##-- http://github.com/CoffeaTeam/coffea/blob/515877fa55e914ef82f51f686d1a0eaa9f0f71d1/coffea/hist/hist_tools.py#L903
 
@@ -120,13 +119,13 @@ for instance in modules:
         
         ##-- Binning for different 2d histogram types 
 
-        twod_plot_labels = ["EnergyVsTimeOccupancy", "EBOcc", "realVsEmu", "emuOverRealvstwrADC", "oneMinusEmuOverRealvstwrADC", "oneMinusEmuOverRealvstwrADCCourseBinning"]
+        twod_plot_labels = ["EnergyVsTimeOccupancy", "EBOcc", "realVsEmu", "emuOverRealvstwrADC", "oneMinusEmuOverRealvstwrADCCourseBinning"]
 
         mapColorDict = {
             "EnergyVsTimeOccupancy" : "jet",
             "realVsEmu" : "Blues",
             "emuOverRealvstwrADC" : "jet",
-            "oneMinusEmuOverRealvstwrADC" : "jet",
+            #"oneMinusEmuOverRealvstwrADC" : "jet",
             "oneMinusEmuOverRealvstwrADCCourseBinning" : "jet"                      
 
         }
@@ -137,8 +136,9 @@ for instance in modules:
             "EBOcc" : [[0, 80], [-18, 18]],
             "realVsEmu" : [[0, 256], [0, 256]],
             "emuOverRealvstwrADC" : [[1, 256], [0, 1.2]],
-            "oneMinusEmuOverRealvstwrADC" : [[1, 256], [0, 1.2]],
-            "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [0, 1.2]] 
+            #"oneMinusEmuOverRealvstwrADC" : [[1, 256], [0, 1.2]],
+            "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 40], [0, 1.2]] 
+            # "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [0, 1.2]] 
             # "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [-1, 1.2]] # 88, 'lo': -1, 'hi': 1.2
             # "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [-2, 1.2]] # 88, 'lo': -1, 'hi': 1.2
             # "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [-10, 1.2]] # 88, 'lo': -1, 'hi': 1.2
@@ -194,6 +194,8 @@ for instance in modules:
             xaxis = hist.axes()[0]
             histName = "%s_2d"%(h)
 
+            #print("values:",values)
+
             ##-- Pickle yields and values for plots 
 
             ##-- Condor
@@ -214,12 +216,14 @@ for instance in modules:
                 ax = plot2d(
                     hist, 
                     xaxis = xaxis,
+                    #norm = LogNorm(vmin=1),
                     patch_opts = dict(
                         # cmap = 'jet',
                         cmap =  mapColor, 
                         # vmin = 0
                         # norm = LogNorm(vmin = 1)
-                        norm = LogNorm(vmin = 1)
+                        #norm = LogNorm(vmin=0)
+                        norm = LogNorm()
                         )
                     )
 

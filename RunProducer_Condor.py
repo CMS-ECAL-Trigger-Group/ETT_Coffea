@@ -6,6 +6,7 @@ The purpose of this module is to submit condor jobs to run the ETT coffea produc
 Example commands:
 
 2021 pilot beam analysis:
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/oneFileBigger/" --tag=00000_00000 -s 
 python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_346446_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeightsTaggingMode/" --tag=211115_170649
 python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeightsTaggingMode/" --tag=211116_115908
 
@@ -36,10 +37,6 @@ script_TEMPLATE = """#!/bin/bash
 #source /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest
 export SCRAM_ARCH=slc7_amd64_gcc820
 
-# export LD_LIBRARY_PATH_STORED=$LD_LIBRARY_PATH_STORED
-
-# eval `scramv1 runtime -sh`
-#eval `scramv1 ru -sh`
 echo
 echo $_CONDOR_SCRATCH_DIR
 cd   $_CONDOR_SCRATCH_DIR
@@ -54,13 +51,12 @@ echo "+ PWD         = $PWD"
 
 python RunProducer.py --jobNum=$1 --infile=$2 --treename="tuplizer/ETTAnalyzerTree" # command 
 
-#rm temp_$1.root
-#echo "----- transfer output to eos :"
-#mv tree_$1. {outputdir}
 echo "----- directory after running :"
 ls -lR .
 echo " ------ THE END (everyone dies !) ----- "
 """
+
+#transfer_output_remaps = "EnergyVsTimeOccupancy_clean_all_values.p={output_dir}/EnergyVsTimeOccupancy_clean_all_values_$(ProcId).p;EnergyVsTimeOccupancy_clean_tagged_values.p={output_dir}/EnergyVsTimeOccupancy_clean_tagged_values_$(ProcId).p"
 
 condor_TEMPLATE = """
 #request_disk          = 1024
@@ -76,21 +72,8 @@ output                = $(ClusterId).$(ProcId).out
 error                 = $(ClusterId).$(ProcId).err
 log                   = $(ClusterId).$(ProcId).log
 initialdir            = {jobdir}
-#transfer_output_remaps = "EBOcc_sevzero_all_values.p={output_dir}/EBOcc_sevzero_all_values_$(ProcId).p;EBOcc_sevzero_MostlyZeroed_values.p={output_dir}/EBOcc_sevzero_MostlyZeroed_values_$(ProcId).p;EBOcc_sevthree_all_values.p={output_dir}/EBOcc_sevthree_all_values_$(ProcId).p;EBOcc_sevthree_MostlyZeroed_values.p={output_dir}/EBOcc_sevthree_MostlyZeroed_values_$(ProcId).p;EBOcc_sevfour_all_values.p={output_dir}/EBOcc_sevfour_all_values_$(ProcId).p;EBOcc_sevfour_MostlyZeroed_values.p={output_dir}/EBOcc_sevfour_MostlyZeroed_values_$(ProcId).p"                                                    
-#transfer_output_remaps = "EnergyVsTimeOccupancy_sevzero_all_yields.p={output_dir}/EnergyVsTimeOccupancy_sevzero_all_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevzero_all_values.p={output_dir}/EnergyVsTimeOccupancy_sevzero_all_values_$(ProcId).p;EnergyVsTimeOccupancy_sevzero_MostlyZeroed_yields.p={output_dir}/EnergyVsTimeOccupancy_sevzero_MostlyZeroed_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevzero_MostlyZeroed_values.p={output_dir}/EnergyVsTimeOccupancy_sevzero_MostlyZeroed_values_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_all_yields.p={output_dir}/EnergyVsTimeOccupancy_sevthree_all_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_all_values.p={output_dir}/EnergyVsTimeOccupancy_sevthree_all_values_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_MostlyZeroed_yields.p={output_dir}/EnergyVsTimeOccupancy_sevthree_MostlyZeroed_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_MostlyZeroed_values.p={output_dir}/EnergyVsTimeOccupancy_sevthree_MostlyZeroed_values_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_all_yields.p={output_dir}/EnergyVsTimeOccupancy_sevfour_all_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_all_values.p={output_dir}/EnergyVsTimeOccupancy_sevfour_all_values_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_MostlyZeroed_yields.p={output_dir}/EnergyVsTimeOccupancy_sevfour_MostlyZeroed_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_MostlyZeroed_values.p={output_dir}/EnergyVsTimeOccupancy_sevfour_MostlyZeroed_values_$(ProcId).p"
-#transfer_output_remaps = "EBOcc_all_values.p={output_dir}/EBOcc_all_values_$(ProcId).p"
-#transfer_output_remaps = "realVsEmu_sevall_all_values.p={output_dir}/realVsEmu_sevall_all_values_$(ProcId).p;realVsEmu_sevzero_all_values.p={output_dir}/realVsEmu_sevzero_all_values_$(ProcId).p;realVsEmu_sevthree_all_values.p={output_dir}/realVsEmu_sevthree_all_values_$(ProcId).p;realVsEmu_sevfour_all_values.p={output_dir}/realVsEmu_sevfour_all_values_$(ProcId).p"
-#transfer_output_remaps = "ETT_histograms_$(ProcId).root={output_dir}/ETT_histograms_$(ProcId).root"
-#transfer_output_remaps = "emuOverRealvstwrADC_sevzero_all_values.p={output_dir}/emuOverRealvstwrADC_sevzero_all_values_$(ProcId).p;emuOverRealvstwrADC_sevthree_all_values.p={output_dir}/emuOverRealvstwrADC_sevthree_all_values_$(ProcId).p;emuOverRealvstwrADC_sevfour_all_values.p={output_dir}/emuOverRealvstwrADC_sevfour_all_values_$(ProcId).p;emuOverRealvstwrADC_sevzero_all_sliceValues.p={output_dir}/emuOverRealvstwrADC_sevzero_all_sliceValues_$(ProcId).p;emuOverRealvstwrADC_sevthree_all_sliceValues.p={output_dir}/emuOverRealvstwrADC_sevthree_all_sliceValues_$(ProcId).p;emuOverRealvstwrADC_sevfour_all_sliceValues.p={output_dir}/emuOverRealvstwrADC_sevfour_all_sliceValues_$(ProcId).p"
-#transfer_output_remaps = "emuOverRealvstwrADC_sevzero_all_values.p={output_dir}/emuOverRealvstwrADC_sevzero_all_values_$(ProcId).p;emuOverRealvstwrADC_sevthree_all_values.p={output_dir}/emuOverRealvstwrADC_sevthree_all_values_$(ProcId).p;emuOverRealvstwrADC_sevfour_all_values.p={output_dir}/emuOverRealvstwrADC_sevfour_all_values_$(ProcId).p"
-#transfer_output_remaps = "oneMinusEmuOverRealvstwrADC_sevzero_all_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevzero_all_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevthree_all_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevthree_all_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevfour_all_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevfour_all_values_$(ProcId).p"
 
-#transfer_output_remaps = "oneMinusEmuOverRealvstwrADC_sevzero_inTime_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevzero_inTime_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevthree_inTime_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevthree_inTime_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevfour_inTime_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevfour_inTime_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevzero_Early_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevzero_Early_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevthree_Early_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevthree_Early_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevfour_Early_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevfour_Early_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevzero_Late_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevzero_Late_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevthree_Late_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevthree_Late_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevfour_Late_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevfour_Late_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevzero_VeryLate_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevzero_VeryLate_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevthree_VeryLate_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevthree_VeryLate_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevfour_VeryLate_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevfour_VeryLate_values_$(ProcId).p"
-#transfer_output_remaps = "oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_inTime_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_inTime_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_inTime_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_inTime_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_inTime_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_inTime_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_Early_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_Early_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_Early_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_Early_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_Early_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_Early_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_Late_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_Late_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_Late_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_Late_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_Late_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_Late_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_VeryLate_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_VeryLate_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_VeryLate_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_VeryLate_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_VeryLate_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_VeryLate_values_$(ProcId).p"
-
-# real vs emu 
-transfer_output_remaps = "realVsEmu_clean_values.p={output_dir}/realVsEmu_clean_values_$(ProcId).p"
-transfer_output_remaps = "EnergyVsTimeOccupancy_clean_all_values.p={output_dir}/EnergyVsTimeOccupancy_clean_all_values_$(ProcId).p;EnergyVsTimeOccupancy_clean_tagged_values.p={output_dir}/EnergyVsTimeOccupancy_clean_tagged_values_$(ProcId).p"
+transfer_output_remaps = "{transfer_output_remaps}"
 
 #Requirements = HasSingularity
 +JobFlavour           = "{queue}"
@@ -106,7 +89,7 @@ queue jobid from {jobdir}/inputfiles.dat
 def main():
     parser = argparse.ArgumentParser(description='Famous Submitter')
     parser.add_argument("-t"   , "--tag"   , type=str, default="Exorcism"  , help="production tag", required=True)
-    parser.add_argument("-q"   , "--queue" , type=str, default="espresso", help="")
+    parser.add_argument("-q"   , "--queue" , type=str, default="microcentury", help="")
     parser.add_argument("-f"   , "--force" , action="store_true"          , help="recreate files and jobs")
     parser.add_argument("-s"   , "--submit", action="store_true"          , help="submit only")
     parser.add_argument("-dry" , "--dryrun", action="store_true"          , help="running without submission")
@@ -143,9 +126,13 @@ def main():
                 infiles.write(name+"\n")
             infiles.close()
         #var = args.var 
+        vars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "EnergyVsTimeOccupancy"]
         # outdir = indir + sample + "_output/{var}/".format(var=var) # could try something like this for each output variable..or maybe need to specify output direc for each variable in .sh file. 
         outdir = indir + sample + "_output/"
         os.system("mkdir -p {}".format(outdir))
+        for var in vars:
+            outdir_perVar = indir + sample + "_output/{var}/".format(var=var)
+            os.system("mkdir -p {}".format(outdir_perVar))
 
         with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
             script = script_TEMPLATE.format(
@@ -160,9 +147,28 @@ def main():
                 "../python/Producer.py",
                 "../python/SumWeights.py"
             ]
+
+            # output files 
+            # depends on variables being output
+            vars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "EnergyVsTimeOccupancy"]
+            times = ["all", "inTime", "Early", "Late", "VeryLate"]
+            severities = ["zero", "three", "four"]
+
+            transfer_files = []
+
+            for var in vars:
+                for sev in severities:
+                    for time in times:
+                        transfer_file = "%s_sev%s_%s_values.p={output_dir}/%s/%s_sev%s_%s_values_$(ProcId).p"%(var, sev, time, var, var, sev, time)
+                        transfer_file = "{var}_sev{sev}_{time}_values.p={output_dir}/{var}/{var}_sev{sev}_{time}_values_$(ProcId).p".format(var=var, sev=sev, time=time, output_dir = outdir)
+                        transfer_files.append(transfer_file)
+
+            transfer_output_remaps = str(";".join(transfer_files))
+
             condor = condor_TEMPLATE.format(
                 transfer_files = ",".join(allFiles),
-                output_dir = outdir,
+                #output_dir = outdir,
+                transfer_output_remaps=transfer_output_remaps,
                 jobdir=jobs_dir,
                 queue=options.queue
             )
