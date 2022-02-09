@@ -136,8 +136,6 @@ class ETT_NTuple(HistProducer):
 
     SelectionsToRun = []
 
-    # severities = ["zero", "three", "four"]
-    # times = ["all", "inTime", "Early", "Late", "VeryLate"]
     sevDict = {
         "zero" : "0",
         "three" : "3",
@@ -147,10 +145,6 @@ class ETT_NTuple(HistProducer):
     # all 
     severities = ["zero", "three", "four"]
     times = ["all", "inTime", "Early", "Late", "VeryLate"]
-
-    # # less 
-    #severities = ["zero"]
-    times = ["all"]
 
     for severity in severities:
         for time in times:

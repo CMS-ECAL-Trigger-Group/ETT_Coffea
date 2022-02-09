@@ -125,14 +125,21 @@ def main():
             for name in in_files:
                 infiles.write(name+"\n")
             infiles.close()
-        #var = args.var 
+
         vars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "EnergyVsTimeOccupancy"]
-        # outdir = indir + sample + "_output/{var}/".format(var=var) # could try something like this for each output variable..or maybe need to specify output direc for each variable in .sh file. 
+        times = ["all", "inTime", "Early", "Late", "VeryLate"]
+        severities = ["zero", "three", "four"]
+
         outdir = indir + sample + "_output/"
         os.system("mkdir -p {}".format(outdir))
+        print("Making directories if they don't exist...")
         for var in vars:
-            outdir_perVar = indir + sample + "_output/{var}/".format(var=var)
-            os.system("mkdir -p {}".format(outdir_perVar))
+            for sev in severities:
+                for time in times:
+                    if(time == "inTime" and sev == "three"): continue ##-- skip in time severity 3 
+                    outdir_perVarSevTime = indir + sample + "_output/{var}/{sev}/{time}/".format(var=var, sev=sev, time=time)
+                    print(outdir_perVarSevTime)
+                    os.system("mkdir -p {}".format(outdir_perVarSevTime))
 
         with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
             script = script_TEMPLATE.format(
@@ -159,8 +166,7 @@ def main():
             for var in vars:
                 for sev in severities:
                     for time in times:
-                        transfer_file = "%s_sev%s_%s_values.p={output_dir}/%s/%s_sev%s_%s_values_$(ProcId).p"%(var, sev, time, var, var, sev, time)
-                        transfer_file = "{var}_sev{sev}_{time}_values.p={output_dir}/{var}/{var}_sev{sev}_{time}_values_$(ProcId).p".format(var=var, sev=sev, time=time, output_dir = outdir)
+                        transfer_file = "{var}_sev{sev}_{time}_values.p={output_dir}/{var}/{sev}/{time}/{var}_sev{sev}_{time}_values_$(ProcId).p".format(var=var, sev=sev, time=time, output_dir = outdir)
                         transfer_files.append(transfer_file)
 
             transfer_output_remaps = str(";".join(transfer_files))
