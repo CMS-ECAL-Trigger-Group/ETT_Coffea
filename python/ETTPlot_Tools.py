@@ -11,6 +11,30 @@ from matplotlib import pyplot as plt
 from matplotlib.colors import LogNorm, SymLogNorm
 import copy 
 
+def GetWorkingPointLabels(direc_):
+    if("0p5Prime" in direc_):
+        WP = "MinDelta0p5prime"
+    elif("2p5Prime" in direc_):
+        WP = "MinDelta2p5prime"
+    else:
+        raise Exception("Cannot find 0p5 or 2p5 WP in output location name")
+
+    if("WithOddPeakFinder" in direc_):
+        PF = "WithOddPF"
+    elif("WithoutOddPeakFinder" in direc_):
+        PF = "WithoutOddPF"
+    else:
+        raise Exception("Cannot find WithOddPF or WithoutOddPF in output location name")   
+
+    if("weightsReco" in direc_):
+        RECO = "Weights"
+    elif("MultifitReco" in direc_):
+        RECO = "MultiFit"
+    else:
+        raise Exception("Cannot find WeightsReco or MultiFitReco RECO in output location name")     
+
+    return WP, PF, RECO
+
 ##-- CMS header 
 def Add_CMS_Header(plt, ax, upperRightText, xmin):
     ##-- Upper left plot text
@@ -82,11 +106,14 @@ def GetBins(varLabel_):
         "realVsEmu" : [[0, 256, 256], [0, 256, 256]],
         "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 35, 35]],
         "EnergyVsTimeOccupancy_ratio" : [[-50, 50, 100],[0, 35, 35]],
-        "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1.0, 8.0, 16.0, 24.0, 32.0, 40.0], [0, 1.2, 48]]
+        #"oneMinusEmuOverRealvstwrADCCourseBinning" : [[1.0, 8.0, 16.0, 24.0, 32.0, 40.0], [0, 1.2, 48]]
+        "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1, 41, 40], [0, 1.2, 48]]
     }
 
-    # x bins 
     xinfo = binDict[varLabel_][0]
+    yinfo = binDict[varLabel_][1]
+
+    # x bins 
     xinfo_len = len(xinfo)
     if(xinfo_len == 3): # assume equal bin widths 
         xmin, xmax, xbins = xinfo
@@ -95,7 +122,6 @@ def GetBins(varLabel_):
         xbinning = np.array(xinfo) 
 
     # y bins 
-    yinfo = binDict[varLabel_][1]
     yinfo_len = len(yinfo)
     if(yinfo_len == 3): # assume equal bin widths 
         ymin, ymax, ybins = yinfo
@@ -116,7 +142,35 @@ def GetPlotLabels(varLabel_):
 
     return labelDict[varLabel_]     
 
-def MakeETTPlot(Values_array, variable_, severity, time):
+# Compute averages values per bin
+def ComputeAverages(xbins_, Values_array_):
+    # make average per bin plot as well 
+    averages = []
+    stdevs = [] 
+
+    ybinVals = range(0, 1200, 25)
+    ybinVals = [val/1000. for val in ybinVals] ##-- y bins (1 - emu/real)
+
+    ##-- x bins 
+    for bin_i, binmin in enumerate(xbins_[:-1]):
+        h_slice_vals = Values_array_[bin_i]
+        #average_conts = np.multiply(ybinVals, h_slice_vals)
+        if(np.sum(h_slice_vals) == 0):
+            average = -1 
+            stdev = -1 
+        else:
+            average = np.average(ybinVals, weights=h_slice_vals)
+            variance = np.average((ybinVals-average)**2, weights=h_slice_vals)
+            stdev = np.sqrt(variance)
+        averages.append(average)
+        stdevs.append(stdev)
+
+    averages = np.array(averages)
+    stdevs = np.array(stdevs)
+    
+    return averages, stdevs 
+
+def MakeETTPlot(Values_array, variable_, severity, time, ol):
     print("Making plot")
     # parameters 
     upperRightText = "Pilot Beam 2021"
@@ -154,17 +208,14 @@ def MakeETTPlot(Values_array, variable_, severity, time):
                     ax=ax,
                 )   
 
-    xLabel, yLabel = GetPlotLabels(variable_)
+    cb.set_label('Entries', rotation=270, fontsize = 25, labelpad = 30)
+    cb.ax.tick_params(labelsize=20) 
 
+    xLabel, yLabel = GetPlotLabels(variable_)
     plt.xlabel(xLabel, fontsize=25)
     plt.ylabel(yLabel, fontsize=25)
-
     Add_CMS_Header(plt, ax, upperRightText, text_xmin)
-
     plt.grid()
-    # plotText, addPlotText = plotText_params
-    # plotText = plotText.replace("clean_", "")
-
     plotText = "Sev = %s, time = %s"%(severity, time)
     addPlotText = 1 
 
@@ -177,7 +228,7 @@ def MakeETTPlot(Values_array, variable_, severity, time):
             transform=ax.transAxes
         )
 
-    ol = "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta2p5prime_WithOddPF_MultiFitReco/"
+    #ol = "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta2p5prime_WithOddPF_MultiFitReco/"
     plt.xticks(fontsize = 20)
     plt.yticks(fontsize = 20)
     fig.tight_layout()
@@ -192,75 +243,55 @@ def MakeETTPlot(Values_array, variable_, severity, time):
     ybinVals = range(0, 1200, 25)
     ybinVals = [val/1000. for val in ybinVals] ##-- y bins (1 - emu/real)
 
-    ##-- x bins 
-    for bin_i, binmin in enumerate(xbins[:-1]):
-        h_slice_vals = Values_array[bin_i]
-        #average_conts = np.multiply(ybinVals, h_slice_vals)
-        if(np.sum(h_slice_vals) == 0):
-            average = -1 
-            stdev = -1 
+    if(variable_ == "oneMinusEmuOverRealvstwrADCCourseBinning"):
+        averages, stdevs = ComputeAverages(xbins, Values_array)
+
+        # Prepare figure and axes 
+        fig, ax = plt.subplots()
+        fig.set_dpi(100)
+        fig.set_size_inches(10, 7.5)
+
+        energy_bins = xbins
+        centered_energy_bins_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) + energy_bins[i] for i in range(len(energy_bins) - 1) ]
+        xerrors_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) for i in range(len(energy_bins) - 1) ]  
+        centered_energy_bins = np.array(centered_energy_bins_)
+        xerrors = np.array(xerrors_)
+        averages_before_mask = np.copy(averages)
+        stdevs_before_mask = np.copy(stdevs)
+        MASK = tuple([averages != -1])
+        centered_energy_bins = centered_energy_bins[MASK]
+        averages = averages[MASK]
+        stdevs = stdevs[MASK]  
+        xerrors = xerrors[MASK]
+
+        zero_errors = [0. for i in range(0, len(averages))]
+        error = 1
+        log = 1
+        xmin_, xmax_ = xbins[0], xbins[-1]
+
+        if(error):
+            plt.scatter(x = centered_energy_bins, y = averages, label = "Severity = %s, %s"%(severity, time), s = 15)
+            plt.errorbar(x = centered_energy_bins, y = averages, xerr = xerrors, yerr = zero_errors, fmt = " ")            
         else:
-            average = np.average(ybinVals, weights=h_slice_vals)
-            variance = np.average((ybinVals-average)**2, weights=h_slice_vals)
-            stdev = np.sqrt(variance)
-        averages.append(average)
-        stdevs.append(stdev)
+            plt.scatter(x = centered_energy_bins, y = averages, label = "Severity = %s, %s"%(severity, time), s = 10)
 
-    averages = np.array(averages)
-    stdevs = np.array(stdevs)
+        plt.xlabel("Real data TP Et (ADC)", fontsize=15)
+        plt.ylabel("Average 1 - (Emulated / Real)", fontsize=15)    
+        plt.legend(loc = 'best', fontsize = 15)
+        plt.ylim(0, 1.01)
+        plt.xlim(xmin_, xmax_)
+        plt.grid()
+        if(log):
+            plt.ylim(0.0001, 1)
+            plt.yscale('log')    
+        plt.savefig("%s/Sev_%s_Average_%s_%s.png"%(ol, severity, variable_, time), dpi = 100)
+        plt.savefig("%s/Sev_%s_Average_%s_%s.pdf"%(ol, severity, variable_, time), dpi = 100)        
+        plt.close()
 
-    #exec("%s_%s_averages = np.copy(averages)"%(severity, timing)) # to save for combining later 
-    #exec("%s_%s_stdevs = np.copy(stdevs)"%(severity, timing)) # to save for combining later 
-    
-    # Prepare figure and axes 
-    fig, ax = plt.subplots()
-    fig.set_dpi(100)
-    fig.set_size_inches(10, 7.5)
+        return averages_before_mask, stdevs_before_mask 
 
-    energy_bins = xbins
-    energies_ = xbins
-    centered_energy_bins_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) + energy_bins[i] for i in range(len(energy_bins) - 1) ]
-    xerrors_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) for i in range(len(energy_bins) - 1) ]  
-
-    centered_energy_bins = np.array(centered_energy_bins_)
-    xerrors = np.array(xerrors_)
-    averages_before_mask = np.copy(averages)
-    stdevs_before_mask = np.copy(stdevs)
-    MASK = tuple([averages != -1])
-    centered_energy_bins = centered_energy_bins[MASK]
-    averages = averages[MASK]
-    stdevs = stdevs[MASK]  
-    xerrors = xerrors[MASK]
-
-    zero_errors = [0. for i in range(0, len(averages))]
-    error = 1
-    log = 1
-    xmin_, xmax_ = xbins[0], xbins[-1]
-
-    if(error):
-        plt.scatter(x = centered_energy_bins, y = averages, label = "Severity = %s, %s"%(severity, time), s = 15)
-        plt.errorbar(x = centered_energy_bins, y = averages, xerr = xerrors, yerr = zero_errors, fmt = " ")            
     else:
-        plt.scatter(x = centered_energy_bins, y = averages, label = "Severity = %s, %s"%(severity, time), s = 10)
-
-#     plt.scatter(x = energies, y = averages, label = "Severity = %s"%(severity), s = 10)
-#     plt.scatter(x = energies, y = averages, label = "Severity = %s"%(severity), s = 10)
-    plt.xlabel("Real data TP Et (ADC)", fontsize=15)
-#     plt.ylabel("Average Emulated / Real", fontsize=15)    
-    plt.ylabel("Average 1 - (Emulated / Real)", fontsize=15)    
-    plt.legend(loc = 'best', fontsize = 15)
-    plt.ylim(0, 1.01)
-    plt.xlim(xmin_, xmax_)
-    # plt.yscale('log')
-    plt.grid()
-    if(log):
-        plt.ylim(0.0001, 1)
-        plt.yscale('log')    
-    plt.savefig("%s/Sev_%s_Average_%s_%s.png"%(ol, severity, variable_, time), dpi = 300)
-    plt.savefig("%s/Sev_%s_Average_%s_%s.pdf"%(ol, severity, variable_, time), dpi = 300)        
-    plt.close()
-
-    return averages_before_mask, stdevs_before_mask 
+        return None, None
 
 """
 
@@ -400,7 +431,7 @@ def MakeETTPlot(Values_array, varLabel, selection, doSymLog, isRatio, plotText_p
             transform=ax.transAxes
         )
 
-    ol = "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta2p5prime_WithOddPF_MultiFitReco/"
+    #ol = "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta2p5prime_WithOddPF_MultiFitReco/"
     plt.xticks(fontsize = 20)
     plt.yticks(fontsize = 20)
     fig.tight_layout()

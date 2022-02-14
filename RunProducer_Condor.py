@@ -6,10 +6,18 @@ The purpose of this module is to submit condor jobs to run the ETT coffea produc
 Example commands:
 
 2021 pilot beam analysis:
+
+# To be submitted:
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithoutOddPeakFinder_0p5PrimeODDweights/" --tag=220210_104904 -s
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithoutOddPeakFinder_2p5PrimeODDweights/" --tag=220210_104645 -s
+
+# Submitted:
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/" --tag=220210_104547 -s
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithoutOddPeakFinder_0p5PrimeODDweights/" --tag=220210_104023 -s
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithoutOddPeakFinder_2p5PrimeODDweights/" --tag=220210_103954 -s
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/" --tag=220210_104615 -s
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/" --tag=220210_094402 -s
 python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/" --tag=220209_125921 -s
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/oneFileBigger/" --tag=00000_00000 -s 
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_346446_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeightsTaggingMode/" --tag=211115_170649
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeightsTaggingMode/" --tag=211116_115908
 
 Misc:
 
@@ -57,8 +65,6 @@ ls -lR .
 echo " ------ THE END (everyone dies !) ----- "
 """
 
-#transfer_output_remaps = "EnergyVsTimeOccupancy_clean_all_values.p={output_dir}/EnergyVsTimeOccupancy_clean_all_values_$(ProcId).p;EnergyVsTimeOccupancy_clean_tagged_values.p={output_dir}/EnergyVsTimeOccupancy_clean_tagged_values_$(ProcId).p"
-
 condor_TEMPLATE = """
 #request_disk          = 1024
 request_disk          = 2048
@@ -90,7 +96,7 @@ queue jobid from {jobdir}/inputfiles.dat
 def main():
     parser = argparse.ArgumentParser(description='Famous Submitter')
     parser.add_argument("-t"   , "--tag"   , type=str, default="Exorcism"  , help="production tag", required=True)
-    parser.add_argument("-q"   , "--queue" , type=str, default="microcentury", help="")
+    parser.add_argument("-q"   , "--queue" , type=str, default="espresso", help="")
     parser.add_argument("-f"   , "--force" , action="store_true"          , help="recreate files and jobs")
     parser.add_argument("-s"   , "--submit", action="store_true"          , help="submit only")
     parser.add_argument("-dry" , "--dryrun", action="store_true"          , help="running without submission")
@@ -127,7 +133,8 @@ def main():
                 infiles.write(name+"\n")
             infiles.close()
 
-        vars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "EnergyVsTimeOccupancy"]
+        # vars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "EnergyVsTimeOccupancy"]
+        vars = ["oneMinusEmuOverRealvstwrADCCourseBinning"]
         times = ["all", "inTime", "Early", "Late", "VeryLate"]
         severities = ["zero", "three", "four"]
 
@@ -158,7 +165,8 @@ def main():
 
             # output files 
             # depends on variables being output
-            vars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "EnergyVsTimeOccupancy"]
+            # vars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "EnergyVsTimeOccupancy"]
+            vars = ["oneMinusEmuOverRealvstwrADCCourseBinning"]
             times = ["all", "inTime", "Early", "Late", "VeryLate"]
             severities = ["zero", "three", "four"]
 
@@ -174,7 +182,6 @@ def main():
 
             condor = condor_TEMPLATE.format(
                 transfer_files = ",".join(allFiles),
-                #output_dir = outdir,
                 transfer_output_remaps=transfer_output_remaps,
                 jobdir=jobs_dir,
                 queue=options.queue

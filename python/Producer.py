@@ -121,10 +121,6 @@ class HistProducer(ProcessorABC):
 
     def passbut(self, event: LazyDataFrame, excut: str, cat: str, variable_name: str):
         """Backwards-compatible passbut."""
-        #print("cat:",cat)
-        #print("cuts:",self.selection[cat])
-        #return eval('&'.join('(' + cut.format(sys=('' if self.weight_syst else self.syst_suffix)) + ')' for cut in self.selection[cat] ))#if excut not in cut))
-
         if(variable_name == "oneMinusEmuOverRealvstwrADCCourseBinning"): # add selection to not include TPs with ET = 0 
             evalStr = '&'.join('(' + cut.format(sys=('' if self.weight_syst else self.syst_suffix)) + ')' for cut in self.selection[cat] )
             evalStr += '&(event.twrADC != 0)'
@@ -257,6 +253,24 @@ class ETT_NTuple(HistProducer):
         # },  
 
 
+        # """
+        # Useful for exploring the data
+        # """
+
+        # 'EnergyVsTimeOccupancy': {
+        #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
+        #     'target_x' : 'time',
+        #     'target_y' : 'twrADC',
+        #     'name': 'EnergyVsTimeOccupancy', 
+        #     # 'region' : ['clean_all', 'clean_tagged'],
+        #     'region' : SelectionsToRun,
+        #     'axes' : {
+        #         'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
+        #         'yaxis': {'label': 'twrADC', 'n_or_arr': 35, 'lo': 0, 'hi': 35}                
+        #     }
+
+        # },  
+
         """
         Useful for evaluating effect of emulation, e.g. double weights, on digis
         """
@@ -271,30 +285,12 @@ class ETT_NTuple(HistProducer):
             'axes' : {
                 # 'xaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
                 # 'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
-                'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0], 'lo': 1, 'hi': 40}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
-                # 'xaxis': {'label': 'twrADC', 'n_or_arr': 40, 'lo': 1, 'hi': 41}, 
+                # 'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0], 'lo': 1, 'hi': 40}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
+                'xaxis': {'label': 'twrADC', 'n_or_arr': 40, 'lo': 1, 'hi': 41}, 
                 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 48, 'lo': 0, 'hi': 1.2}                
                 # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 88, 'lo': -1, 'hi': 1.2}                
                 # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 128, 'lo': -2, 'hi': 1.2}                
                 # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 448, 'lo': -10, 'hi': 1.2}    ##-- 0.025 space bins in y axis             
-            }
-
-        },  
-
-        """
-        Useful for exploring the data
-        """
-
-        'EnergyVsTimeOccupancy': {
-            # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
-            'target_x' : 'time',
-            'target_y' : 'twrADC',
-            'name': 'EnergyVsTimeOccupancy', 
-            # 'region' : ['clean_all', 'clean_tagged'],
-            'region' : SelectionsToRun,
-            'axes' : {
-                'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
-                'yaxis': {'label': 'twrADC', 'n_or_arr': 35, 'lo': 0, 'hi': 35}                
             }
 
         },  
@@ -381,8 +377,6 @@ class ETT_NTuple(HistProducer):
             for timeSel in timeSels:
                 selec_selections.append(timeSel)
             Selection_Name = "sev%s_%s"%(severity, time)
-            print("Selection name:",Selection_Name)
-            print("selec_selections:",selec_selections)
             selection[Selection_Name] = (selec_selections)
     #""" 
 
