@@ -253,23 +253,24 @@ class ETT_NTuple(HistProducer):
         # },  
 
 
-        # """
-        # Useful for exploring the data
-        # """
+        """
+        Useful for exploring the data
+        """
 
-        # 'EnergyVsTimeOccupancy': {
-        #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
-        #     'target_x' : 'time',
-        #     'target_y' : 'twrADC',
-        #     'name': 'EnergyVsTimeOccupancy', 
-        #     # 'region' : ['clean_all', 'clean_tagged'],
-        #     'region' : SelectionsToRun,
-        #     'axes' : {
-        #         'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
-        #         'yaxis': {'label': 'twrADC', 'n_or_arr': 35, 'lo': 0, 'hi': 35}                
-        #     }
+        'EnergyVsTimeOccupancy': {
+            # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
+            'target_x' : 'time',
+            'target_y' : 'twrADC',
+            'name': 'EnergyVsTimeOccupancy', 
+            # 'region' : ['clean_all', 'clean_tagged'],
+            'region' : SelectionsToRun,
+            'axes' : {
+                'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
+                'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256} # Full ET range           
+                # 'yaxis': {'label': 'twrADC', 'n_or_arr': 35, 'lo': 0, 'hi 35} # Low ET range                 
+            }
 
-        # },  
+        },  
 
         """
         Useful for evaluating effect of emulation, e.g. double weights, on digis
@@ -283,10 +284,10 @@ class ETT_NTuple(HistProducer):
             'name': 'oneMinusEmuOverRealvstwrADCCourseBinning', 
             'region' : SelectionsToRun, 
             'axes' : {
-                # 'xaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
-                # 'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
-                # 'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0], 'lo': 1, 'hi': 40}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
-                'xaxis': {'label': 'twrADC', 'n_or_arr': 40, 'lo': 1, 'hi': 41}, 
+                # 'xaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}, 
+                'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], 'lo': 1, 'hi': 256}, 
+                # 'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0], 'lo': 1, 'hi': 40},
+                # 'xaxis': {'label': 'twrADC', 'n_or_arr': 40, 'lo': 1, 'hi': 41}, # Low ET range 
                 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 48, 'lo': 0, 'hi': 1.2}                
                 # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 88, 'lo': -1, 'hi': 1.2}                
                 # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 128, 'lo': -2, 'hi': 1.2}                

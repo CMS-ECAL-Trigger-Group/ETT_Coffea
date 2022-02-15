@@ -6,6 +6,14 @@ The purpose of this notebook is to plot quantities from ETTAnalyzer outputs.
 
 Example commands:
 
+conda activate higgs-dna # to create parquet files 
+
+# Full readout data from 2017/2018 
+python3 ETTPlot.py --dataset FullReadoutData_2017_2018 --variables EnergyVsTimeOccupancy,oneMinusEmuOverRealvstwrADCCourseBinning  --maxFiles 1000000  --plotTogether --fromParquet
+python3 ETTPlot.py --variables oneMinusEmuOverRealvstwrADCCourseBinning --severities zero --times inTime --maxFiles 10 --outputLocation "/eos/user/a/atishelm/www/EcalL1Optimization/FullReadoutData_2017_2018/" --plotIndividuals
+python3 ETTPlot.py --dataset FullReadoutData_2017_2018 --directory --variables oneMinusEmuOverRealvstwrADCCourseBinning,EnergyVsTimeOccupancy --severities zero --times inTime --maxFiles 100 --outputLocation "/eos/user/a/atishelm/www/EcalL1Optimization/FullReadoutData_2017_2018/MinDelta2p5prime_WithOddPF_WeightsReco/" --plotIndividuals
+
+# 2021 Pilot Beam
 python3 ETTPlot.py --variables oneMinusEmuOverRealvstwrADCCourseBinning  --plotTogether --fromParquet
 
 python3 ETTPlot.py --variables oneMinusEmuOverRealvstwrADCCourseBinning --severities zero --times inTime --maxFiles 10000 --outputLocation "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta0p5prime_WithOddPF_MultiFitReco/" --plotIndividuals
@@ -36,7 +44,8 @@ parser.add_argument("--variables", type = str, default = "RealVsEmu", help = "Co
 parser.add_argument("--times", type = str, default = "all,Early,inTime,Late,VeryLate", help = "Comma separated list of times to plot") 
 parser.add_argument("--severities", type = str, default = "zero,three,four", help = "Comma separated list of severities to plot") 
 parser.add_argument("--maxFiles", type = int, default = 1, help = "Max number of files to process")
-parser.add_argument("--outputLocation", type = str, required = True, help = "Output directory for beautiful plots") 
+#parser.add_argument("--outputLocation", type = str, required = True, help = "Output directory for beautiful plots") 
+parser.add_argument("--dataset", type = str, required = True, help = "Dataset that was run over. Options: FullReadoutData_2017_2018, PilotBeam2021") 
 parser.add_argument("--plotIndividuals", action="store_true", default = False, help = "Produce a plot for each selection")
 parser.add_argument("--plotTogether", action="store_true", default = False, help = "Produce a plot for each selection")
 parser.add_argument("--fromParquet", action="store_true", default = False, help = "Plot using parquet files")
@@ -53,33 +62,19 @@ parser.add_argument("--fromParquet", action="store_true", default = False, help 
 args = parser.parse_args()
 
 # directory = args.directory 
-
-directories = [
-    "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithoutOddPeakFinder_0p5PrimeODDweights/220210_104023/all_output/",
-    "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithoutOddPeakFinder_2p5PrimeODDweights/220210_103954/all_output/",
-    # "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/220210_104615/all_output/",
-    "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/220210_094402/all_output/",
-    "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/220209_125921/all_output/"
-]
-
-direc_ol_dict = {
-    "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithoutOddPeakFinder_0p5PrimeODDweights/220210_104023/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta0p5prime_WithoutOddPF_MultiFitReco/",
-    "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithoutOddPeakFinder_2p5PrimeODDweights/220210_103954/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta2p5prime_WithoutOddPF_MultiFitReco/",
-    # "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/220210_104615/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta0p5prime_WithOddPF_WeightsReco/",
-    "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/220210_094402/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta0p5prime_WithOddPF_MultiFitReco/",
-    "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/220209_125921/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta2p5prime_WithOddPF_MultiFitReco/",    
-}
+# FullReadout data 2017/2018 
 
 variables = args.variables.split(',')
 times = args.times.split(',')
 severities = args.severities.split(',')
 maxFiles = args.maxFiles 
 #ol = args.outputLocation
+dataset = args.dataset
 plotIndividuals = args.plotIndividuals 
 plotTogether = args.plotTogether
 fromParquet = args.fromParquet
 
-ol = "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/AllWorkingPoints/"
+ol = "/eos/user/a/atishelm/www/EcalL1Optimization/{dataset}/AllWorkingPoints/".format(dataset=dataset)
 
 # For real vs. emu plots:
 # zmax = args.zmax 
@@ -90,6 +85,37 @@ ol = "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/AllWorkingPoints
 # plotIndividuals = args.plotIndividuals
 # plotRatio = args.plotRatio 
 # addPlotText = args.addPlotText
+
+if(dataset == "FullReadoutData_2017_2018"):
+    directories = [
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/220214_092624/all_output/",
+    ]
+
+    direc_ol_dict = {
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/220214_092624/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/FullReadoutData_2017_2018/MinDelta2p5prime_WithOddPF_WeightsReco/",
+    }
+
+elif(dataset == "PilotBeam2021"):
+    directories = [
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithoutOddPeakFinder_0p5PrimeODDweights/220210_104023/all_output/",
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithoutOddPeakFinder_2p5PrimeODDweights/220210_103954/all_output/",
+        # "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/220210_104615/all_output/",
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/220210_094402/all_output/",
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/220209_125921/all_output/"
+    ]
+
+    direc_ol_dict = {
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithoutOddPeakFinder_0p5PrimeODDweights/220210_104023/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta0p5prime_WithoutOddPF_MultiFitReco/",
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithoutOddPeakFinder_2p5PrimeODDweights/220210_103954/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta2p5prime_WithoutOddPF_MultiFitReco/",
+        # "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/220210_104615/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta0p5prime_WithOddPF_WeightsReco/",
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/220210_094402/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta0p5prime_WithOddPF_MultiFitReco/",
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/220209_125921/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta2p5prime_WithOddPF_MultiFitReco/",    
+    }
+
+upperRightTextDict = {
+    "PilotBeam2021" : "Pilot Beam 2021",
+    "FullReadoutData_2017_2018" : "FR 2017 2018"
+}
 
 if(__name__ == '__main__'):
 
@@ -145,14 +171,15 @@ if(__name__ == '__main__'):
                         exec("These_Values = np.copy(total_values)") 
                         os.system("mkdir -p %s"%(direc_ol))
                         os.system("cp %s/../index.php %s"%(direc_ol, direc_ol))
-                        averages, stdevs = MakeETTPlot(These_Values, variable, severity, time, direc_ol) # make plots and return averages 
+                        upperRightText = upperRightTextDict[dataset]
+                        averages, stdevs = MakeETTPlot(These_Values, variable, severity, time, direc_ol, upperRightText, dataset) # make plots and return averages 
 
                         # save averages and stdevs as parquet files (choosing parquet for fun / experience) to combine everything later 
                         # save averages for each case: var, WP, PF, RECO, Sev, Time
 
                         if(variable == "oneMinusEmuOverRealvstwrADCCourseBinning"):                                   
 
-                            parquetOutDir = "output"
+                            parquetOutDir = "output/%s/%s_%s_%s_%s/"%(dataset, variable, WP, PF, RECO)
                             os.system("mkdir -p %s"%(parquetOutDir))
                             outName_averages = "%s/%s_%s_%s_%s_%s_%s_averages.parquet"%(parquetOutDir, variable, WP, PF, RECO, severity, time)
                             outName_stdevs = "%s/%s_%s_%s_%s_%s_%s_stdevs.parquet"%(parquetOutDir, variable, WP, PF, RECO, severity, time)
@@ -188,7 +215,7 @@ if(__name__ == '__main__'):
 
             # plot average lines on same plots
             if(variable == "oneMinusEmuOverRealvstwrADCCourseBinning"):
-                xbins, ybins = GetBins(variable)
+                xbins, ybins = GetBins(variable, dataset)
                 for time in times:
                     print("On time:",time)
                     for sev_i, severity in enumerate(severities):
@@ -203,7 +230,7 @@ if(__name__ == '__main__'):
                             WP, PF, RECO = GetWorkingPointLabels(direc)                        
 
                             if(fromParquet):
-                                parquetOutDir = "output/%s_%s_%s_%s/"%(variable, WP, PF, RECO)
+                                parquetOutDir = "output/%s/%s_%s_%s_%s/"%(dataset, variable, WP, PF, RECO)
                                 os.system("mkdir -p %s"%(parquetOutDir))
                                 averages_path = "%s/%s_%s_%s_%s_%s_%s_averages.parquet"%(parquetOutDir, variable, WP, PF, RECO, severity, time)
                                 stdevs_path = "%s/%s_%s_%s_%s_%s_%s_stdevs.parquet"%(parquetOutDir, variable, WP, PF, RECO, severity, time)                            
@@ -274,7 +301,7 @@ if(__name__ == '__main__'):
                         plt.grid()
                         plt.xticks(fontsize = 15)
                         plt.yticks(fontsize = 15)
-                        upperRightText = "Pilot Beam 2021"
+                        upperRightText = upperRightTextDict[dataset]
                         text_xmin = 0.135
                         Add_CMS_Header(plt, ax, upperRightText, text_xmin)
                         fig.tight_layout()

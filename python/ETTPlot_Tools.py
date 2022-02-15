@@ -101,14 +101,23 @@ def SetXMax(Values_array_, xmax_, binWidth_): # as you loop the Values_array, ea
     Transformed_List = np.array(Transformed_List)
     return Transformed_List    
 
-def GetBins(varLabel_):
-    binDict = {
-        "realVsEmu" : [[0, 256, 256], [0, 256, 256]],
-        "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 35, 35]],
-        "EnergyVsTimeOccupancy_ratio" : [[-50, 50, 100],[0, 35, 35]],
-        #"oneMinusEmuOverRealvstwrADCCourseBinning" : [[1.0, 8.0, 16.0, 24.0, 32.0, 40.0], [0, 1.2, 48]]
-        "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1, 41, 40], [0, 1.2, 48]]
-    }
+def GetBins(varLabel_, dataset_):
+
+    # larger energy range for full readout 2017 / 2018 data 
+    if(dataset_ == "FullReadoutData_2017_2018"):
+        binDict = {
+            "realVsEmu" : [[0, 256, 256], [0, 256, 256]],
+            "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 256, 256]], # full ET range 
+            "EnergyVsTimeOccupancy_ratio" : [[-50, 50, 100],[0, 35, 35]],
+            "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], [0, 1.2, 48]]
+        }
+    elif(dataset_ == "PilotBeam2021"):
+        binDict = {
+            "realVsEmu" : [[0, 256, 256], [0, 256, 256]],
+            "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 35, 35]], # shorter ET range 
+            "EnergyVsTimeOccupancy_ratio" : [[-50, 50, 100],[0, 35, 35]],
+            "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1, 41, 40], [0, 1.2, 48]]
+        }
 
     xinfo = binDict[varLabel_][0]
     yinfo = binDict[varLabel_][1]
@@ -170,10 +179,10 @@ def ComputeAverages(xbins_, Values_array_):
     
     return averages, stdevs 
 
-def MakeETTPlot(Values_array, variable_, severity, time, ol):
+def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dataset):
     print("Making plot")
     # parameters 
-    upperRightText = "Pilot Beam 2021"
+    #upperRightText = "Pilot Beam 2021"
     text_xmin = 0.1
 
     # Prepare figure and axes 
@@ -182,7 +191,7 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol):
     fig.set_size_inches(10, 7.5)
     cmap = copy.copy(matplotlib.cm.get_cmap("jet"))
     cmap.set_under(color='white')     
-    xbins, ybins = GetBins(variable_)
+    xbins, ybins = GetBins(variable_, dataset)
 
     # plot with colormesh 
     # if(isRatio): 

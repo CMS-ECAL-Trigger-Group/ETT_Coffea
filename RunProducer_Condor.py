@@ -5,13 +5,18 @@ The purpose of this module is to submit condor jobs to run the ETT coffea produc
 
 Example commands:
 
-2021 pilot beam analysis:
+# Fullreadout data analysis:
 
-# To be submitted:
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithoutOddPeakFinder_0p5PrimeODDweights/" --tag=220210_104904 -s
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithoutOddPeakFinder_2p5PrimeODDweights/" --tag=220210_104645 -s
+# To submit:
 
 # Submitted:
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/" --tag=220214_122937 -s
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/" --tag=220214_092624 -s
+
+# 2021 pilot beam analysis:
+# Submitted:
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithoutOddPeakFinder_2p5PrimeODDweights/" --tag=220210_104645 -s
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithoutOddPeakFinder_0p5PrimeODDweights/" --tag=220210_104904 -s
 python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/" --tag=220210_104547 -s
 python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithoutOddPeakFinder_0p5PrimeODDweights/" --tag=220210_104023 -s
 python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithoutOddPeakFinder_2p5PrimeODDweights/" --tag=220210_103954 -s
@@ -133,8 +138,8 @@ def main():
                 infiles.write(name+"\n")
             infiles.close()
 
-        # vars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "EnergyVsTimeOccupancy"]
-        vars = ["oneMinusEmuOverRealvstwrADCCourseBinning"]
+        vars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "EnergyVsTimeOccupancy"]
+        # vars = ["oneMinusEmuOverRealvstwrADCCourseBinning"]
         times = ["all", "inTime", "Early", "Late", "VeryLate"]
         severities = ["zero", "three", "four"]
 
@@ -165,8 +170,8 @@ def main():
 
             # output files 
             # depends on variables being output
-            # vars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "EnergyVsTimeOccupancy"]
-            vars = ["oneMinusEmuOverRealvstwrADCCourseBinning"]
+            vars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "EnergyVsTimeOccupancy"]
+            # vars = ["oneMinusEmuOverRealvstwrADCCourseBinning"]
             times = ["all", "inTime", "Early", "Late", "VeryLate"]
             severities = ["zero", "three", "four"]
 
