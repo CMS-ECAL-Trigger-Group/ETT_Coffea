@@ -35,13 +35,12 @@ def GetWorkingPointLabels(direc_):
 
     return WP, PF, RECO
 
-##-- CMS header 
-def Add_CMS_Header(plt, ax, upperRightText, xmin):
-    ##-- Upper left plot text
-    ##-- CMS 
+def Add_CMS_Header(plt, ax, upperRightText, xmin, addLumi, lumi, fontsize):
+    
     plt.text(
         0., 1., u"CMS ",
-        fontsize=20, fontweight='bold',
+        fontsize=fontsize, fontweight='bold',
+        # fontsize=fontsize * 0.7, fontweight='bold',
         horizontalalignment='left',
         verticalalignment='bottom',
         transform=ax.transAxes
@@ -51,20 +50,42 @@ def Add_CMS_Header(plt, ax, upperRightText, xmin):
     
     ##-- Preliminary 
     plt.text(
-        prelim_x, 0.998, u"$\it{Preliminary}$",
-        fontsize=19,
+        # prelim_x, 1., u"$\it{Preliminary}$",
+        # prelim_x, 1., u"$\it{Work}$ $\it{In}$ $\it{Progress}$",
+        # prelim_x * 0.75, 1., u"$\it{Work}$ $\it{In}$ $\it{Progress}$",
+        prelim_x * 0.75, 1., u"$\it{Preliminary}$",
+        # prelim_x * 0.75, 1., u"$\it{Supplementary}$",
+        fontsize=(fontsize) * (0.93),
+        # fontsize=fontsize,
         horizontalalignment='left',
         verticalalignment='bottom',
         transform=ax.transAxes
     )    
 
-    # upper right text 
+    # # upper right text 
+    # plt.text(
+    #     1., 1., upperRightText,
+    #     fontsize=16, horizontalalignment='right', 
+    #     verticalalignment='bottom', 
+    #     transform=ax.transAxes
+    # )  
+
+    if(addLumi):
+        upperRightText = r"%s fb$^{-1}$ (13 TeV)"%(str(lumi))
+    else:
+        upperRightText = r"(13 TeV)"
+
+    ##-- Lumi 
     plt.text(
         1., 1., upperRightText,
-        fontsize=16, horizontalalignment='right', 
+        # fontsize=fontsize, horizontalalignment='right', 
+        fontsize=fontsize, horizontalalignment='right', 
         verticalalignment='bottom', 
         transform=ax.transAxes
-    )  
+    )   
+
+    #plt.title('Left Title', loc='left')
+    #plt.title('Right Title', loc='right')    
 
 # for changing the axes of plots made from pickled arrays 
 def SetYMin(Values_array_, ymin_, binWidth_):
@@ -104,12 +125,13 @@ def SetXMax(Values_array_, xmax_, binWidth_): # as you loop the Values_array, ea
 def GetBins(varLabel_, dataset_):
 
     # larger energy range for full readout 2017 / 2018 data 
-    if(dataset_ == "FullReadoutData_2017_2018"):
+    if(dataset_ == "FullReadoutData_2018"):
         binDict = {
             "realVsEmu" : [[0, 256, 256], [0, 256, 256]],
             "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 256, 256]], # full ET range 
             "EnergyVsTimeOccupancy_ratio" : [[-50, 50, 100],[0, 35, 35]],
-            "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], [0, 1.2, 48]]
+            "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], [0, 1.2, 48]],
+            "oneMinusEmuOverRealvstwrADCCourseBinningZoomed" : [[1, 41, 40], [0, 1.2, 48]]
         }
     elif(dataset_ == "PilotBeam2021"):
         binDict = {
@@ -145,7 +167,8 @@ def GetPlotLabels(varLabel_):
         "realVsEmu" : ["Emulated TP Et (ADC)", "Real data TP Et (ADC)"],
         "EnergyVsTimeOccupancy" : ["time (ns)", "Real data TP Et (ADC)"],
         "EnergyVsTimeOccupancy_ratio" : ["time (ns)", "Real data TP Et (ADC)"],
-        "oneMinusEmuOverRealvstwrADCCourseBinning" : ["Real data TP Et (ADC)", "1 - (emu / real)"]
+        "oneMinusEmuOverRealvstwrADCCourseBinning" : ["Real data TP Et (ADC)", "1 - (emu / real)"],
+        "oneMinusEmuOverRealvstwrADCCourseBinningZoomed" : ["Readl data TP Et (ADC)", "1 - (emu / real)"]
 
     }
 
@@ -179,11 +202,14 @@ def ComputeAverages(xbins_, Values_array_):
     
     return averages, stdevs 
 
-def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dataset):
+def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dataset, lumi):
     print("Making plot")
+
+
+
     # parameters 
     #upperRightText = "Pilot Beam 2021"
-    text_xmin = 0.1
+    
 
     # Prepare figure and axes 
     fig, ax = plt.subplots()
@@ -203,12 +229,26 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
     # else: 
         # norm = None 
 
-    vmin = 1
+    if(variable_ == "EnergyVsTimeOccupancy"):
+        normalize = 1
+    else:
+        normalize = 0 
+
+    if(normalize):
+        maxVal = np.max(Values_array)
+        Values_array = Values_array / maxVal 
+        vmin = 0.000000001
+        zLabel = "Fraction"
+
+    else: 
+        vmin = 1 
+        zLabel = "Entries"
+
     pos = ax.pcolormesh(xbins, 
                         ybins, 
                         Values_array.transpose(1,0), 
                         cmap = cmap, 
-                        #vmin = vmin,
+                        # vmin = vmin,
                         norm = LogNorm(vmin=vmin),
                         #vmax = vmax,
                         # norm = norm
@@ -217,13 +257,16 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
                     ax=ax,
                 )   
 
-    cb.set_label('Entries', rotation=270, fontsize = 25, labelpad = 30)
+    cb.set_label(zLabel, rotation=270, fontsize = 25, labelpad = 30)
     cb.ax.tick_params(labelsize=20) 
 
     xLabel, yLabel = GetPlotLabels(variable_)
     plt.xlabel(xLabel, fontsize=25)
     plt.ylabel(yLabel, fontsize=25)
-    Add_CMS_Header(plt, ax, upperRightText, text_xmin)
+    addLumi = 1
+    fontsize = 22.5
+    text_xmin = 0.12
+    Add_CMS_Header(plt, ax, upperRightText, text_xmin, addLumi, lumi, fontsize)
     plt.grid()
     plotText = "Sev = %s, time = %s"%(severity, time)
     addPlotText = 1 
@@ -242,7 +285,7 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
     plt.yticks(fontsize = 20)
     fig.tight_layout()
     for fileType in ["png", "pdf"]:
-        plt.savefig("{ol}/{variable_}_sev{severity}_{time}.{fileType}".format(ol=ol, variable_=variable_, severity=severity, time=time, fileType=fileType))
+        plt.savefig("{ol}/{variable_}_sev{severity}_{time}.{fileType}".format(ol=ol, variable_=variable_, severity=severity, time=time, fileType=fileType), dpi = 300)  #bbox_inches='tight', dpi = 300)
     plt.close()    
 
     # make average per bin plot as well 
@@ -252,7 +295,7 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
     ybinVals = range(0, 1200, 25)
     ybinVals = [val/1000. for val in ybinVals] ##-- y bins (1 - emu/real)
 
-    if(variable_ == "oneMinusEmuOverRealvstwrADCCourseBinning"):
+    if( (variable_ == "oneMinusEmuOverRealvstwrADCCourseBinning") or (variable_ == "oneMinusEmuOverRealvstwrADCCourseBinningZoomed")):
         averages, stdevs = ComputeAverages(xbins, Values_array)
 
         # Prepare figure and axes 
@@ -265,6 +308,10 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
         xerrors_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) for i in range(len(energy_bins) - 1) ]  
         centered_energy_bins = np.array(centered_energy_bins_)
         xerrors = np.array(xerrors_)
+
+        # zero errors: 
+        # xerrors_ = np.array([0 for i in len(xerrors)])
+
         averages_before_mask = np.copy(averages)
         stdevs_before_mask = np.copy(stdevs)
         MASK = tuple([averages != -1])
@@ -274,15 +321,19 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
         xerrors = xerrors[MASK]
 
         zero_errors = [0. for i in range(0, len(averages))]
-        error = 1
+        error = 0
         log = 1
         xmin_, xmax_ = xbins[0], xbins[-1]
 
+        print("here")
+
         if(error):
             plt.scatter(x = centered_energy_bins, y = averages, label = "Severity = %s, %s"%(severity, time), s = 15)
-            plt.errorbar(x = centered_energy_bins, y = averages, xerr = xerrors, yerr = zero_errors, fmt = " ")            
+            # plt.errorbar(x = centered_energy_bins, y = averages, xerr = xerrors, yerr = zero_errors, fmt = " ")            
+            plt.errorbar(x = centered_energy_bins, y = averages, xerr = zero_errors, yerr = zero_errors, fmt = " ")            
         else:
             plt.scatter(x = centered_energy_bins, y = averages, label = "Severity = %s, %s"%(severity, time), s = 10)
+            plt.plot(x = centered_energy_bins, y = averages, label = "__nolegend__", linestyle = '-')
 
         plt.xlabel("Real data TP Et (ADC)", fontsize=15)
         plt.ylabel("Average 1 - (Emulated / Real)", fontsize=15)    

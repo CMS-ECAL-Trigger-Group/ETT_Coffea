@@ -5,24 +5,9 @@ The purpose of this module is to submit condor jobs to run the ETT coffea produc
 
 Example commands:
 
-# Fullreadout data analysis:
-
-# To submit:
-
-# Submitted:
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/" --tag=220214_122937 -s
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/" --tag=220214_092624 -s
-
-# 2021 pilot beam analysis:
-# Submitted:
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithoutOddPeakFinder_2p5PrimeODDweights/" --tag=220210_104645 -s
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithoutOddPeakFinder_0p5PrimeODDweights/" --tag=220210_104904 -s
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/" --tag=220210_104547 -s
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithoutOddPeakFinder_0p5PrimeODDweights/" --tag=220210_104023 -s
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithoutOddPeakFinder_2p5PrimeODDweights/" --tag=220210_103954 -s
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/" --tag=220210_104615 -s
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/" --tag=220210_094402 -s
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/" --tag=220209_125921 -s
+# 2022 900 GeV collisions data analysis:
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --tag=oneFile -s --vars oneMinusEmuOverRealvstwrADCCourseBinningZoomed
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --tag=220615_220151 -s --vars oneMinusEmuOverRealvstwrADCCourseBinningZoomed
 
 Misc:
 
@@ -67,7 +52,7 @@ python RunProducer.py --jobNum=$1 --infile=$2 --treename="tuplizer/ETTAnalyzerTr
 
 echo "----- directory after running :"
 ls -lR .
-echo " ------ THE END (everyone dies !) ----- "
+echo " ------ DONE ----- "
 """
 
 condor_TEMPLATE = """
@@ -106,8 +91,10 @@ def main():
     parser.add_argument("-s"   , "--submit", action="store_true"          , help="submit only")
     parser.add_argument("-dry" , "--dryrun", action="store_true"          , help="running without submission")
     parser.add_argument("--direc", type = str , help="Directory with input files")
+    parser.add_argument("--vars", type = str , help="Comma separated string of variables to save")
 
     options = parser.parse_args()
+    vars = options.vars.split(',')
 
     indir = "{}/{}/".format(options.direc, options.tag)
 
@@ -138,8 +125,6 @@ def main():
                 infiles.write(name+"\n")
             infiles.close()
 
-        vars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "EnergyVsTimeOccupancy"]
-        # vars = ["oneMinusEmuOverRealvstwrADCCourseBinning"]
         times = ["all", "inTime", "Early", "Late", "VeryLate"]
         severities = ["zero", "three", "four"]
 
@@ -170,8 +155,7 @@ def main():
 
             # output files 
             # depends on variables being output
-            vars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "EnergyVsTimeOccupancy"]
-            # vars = ["oneMinusEmuOverRealvstwrADCCourseBinning"]
+
             times = ["all", "inTime", "Early", "Late", "VeryLate"]
             severities = ["zero", "three", "four"]
 

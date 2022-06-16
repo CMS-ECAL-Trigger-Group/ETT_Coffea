@@ -9,7 +9,9 @@ Example commands:
 conda activate higgs-dna # to create parquet files 
 
 # Full readout data from 2017/2018 
-python3 ETTPlot.py --dataset FullReadoutData_2017_2018 --variables EnergyVsTimeOccupancy,oneMinusEmuOverRealvstwrADCCourseBinning  --maxFiles 1000000  --plotTogether --fromParquet
+python3 ETTPlot.py --dataset FullReadoutData_2018 --variables oneMinusEmuOverRealvstwrADCCourseBinningZoomed  --maxFiles 1000000  --plotTogether --fromParquet --times inTime --severities zero
+python3 ETTPlot.py --dataset FullReadoutData_2018 --variables EnergyVsTimeOccupancy,oneMinusEmuOverRealvstwrADCCourseBinning  --maxFiles 1000000  --plotTogether --fromParquet
+python3 ETTPlot.py --dataset FullReadoutData_2018 --variables EnergyVsTimeOccupancy,oneMinusEmuOverRealvstwrADCCourseBinning  --maxFiles 1000000  --plotIndividual
 python3 ETTPlot.py --variables oneMinusEmuOverRealvstwrADCCourseBinning --severities zero --times inTime --maxFiles 10 --outputLocation "/eos/user/a/atishelm/www/EcalL1Optimization/FullReadoutData_2017_2018/" --plotIndividuals
 python3 ETTPlot.py --dataset FullReadoutData_2017_2018 --directory --variables oneMinusEmuOverRealvstwrADCCourseBinning,EnergyVsTimeOccupancy --severities zero --times inTime --maxFiles 100 --outputLocation "/eos/user/a/atishelm/www/EcalL1Optimization/FullReadoutData_2017_2018/MinDelta2p5prime_WithOddPF_WeightsReco/" --plotIndividuals
 
@@ -86,13 +88,19 @@ ol = "/eos/user/a/atishelm/www/EcalL1Optimization/{dataset}/AllWorkingPoints/".f
 # plotRatio = args.plotRatio 
 # addPlotText = args.addPlotText
 
-if(dataset == "FullReadoutData_2017_2018"):
+if(dataset == "FullReadoutData_2018"):
     directories = [
         "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/220214_092624/all_output/",
+        # "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/220214_122937/all_output/",
+        # "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/220214_122635/all_output/",
+        # "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/220214_122824/all_output/",
     ]
 
     direc_ol_dict = {
-        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/220214_092624/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/FullReadoutData_2017_2018/MinDelta2p5prime_WithOddPF_WeightsReco/",
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/220214_092624/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/FullReadoutData_2018/MinDelta2p5prime_WithOddPF_WeightsReco/",
+        # "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/220214_122937/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/FullReadoutData_2018/MinDelta2p5prime_WithOddPF_MultiFitReco/",
+        # "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/220214_122635/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/FullReadoutData_2018/MinDelta0p5prime_WithOddPF_WeightsReco/",
+        # "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/220214_122824/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/FullReadoutData_2018/MinDelta0p5prime_WithOddPF_MultiFitReco/",
     }
 
 elif(dataset == "PilotBeam2021"):
@@ -113,8 +121,8 @@ elif(dataset == "PilotBeam2021"):
     }
 
 upperRightTextDict = {
-    "PilotBeam2021" : "Pilot Beam 2021",
-    "FullReadoutData_2017_2018" : "FR 2017 2018"
+    "PilotBeam2021" : ["Pilot Beam 2021", "XXX"], # label, lumi (fb-1)
+    "FullReadoutData_2018" : ["FR 2018", "0.014"] # label, lumi (fb-1)
 }
 
 if(__name__ == '__main__'):
@@ -122,7 +130,8 @@ if(__name__ == '__main__'):
     varLabelDict = {
         "realVsEmu": "realVsEmu",
         "EnergyVsTimeOccupancy" : "EnergyVsTimeOccupancy",
-        "oneMinusEmuOverRealvstwrADCCourseBinning" : "oneMinusEmuOverRealvstwrADCCourseBinning"
+        "oneMinusEmuOverRealvstwrADCCourseBinning" : "oneMinusEmuOverRealvstwrADCCourseBinning",
+        "oneMinusEmuOverRealvstwrADCCourseBinningZoomed" : "oneMinusEmuOverRealvstwrADCCourseBinningZoomed"
     }
 
     # Make output directory if it doesn't exist 
@@ -150,6 +159,9 @@ if(__name__ == '__main__'):
                         if(time == "inTime" and severity == "three"):
                             print("Skipping in time severity three as they shouldn't exist by definition")
                             continue 
+                        if((variable == "EnergyVsTimeOccupancy") and (time != "all")):
+                            print("Already plotted EnergyVsTimeOccupancy for all times for given severity")
+                            continue                         
                         print("On Var: %s, Sev: %s, time: %s"%(variable, severity, time))
                         thisDirec = "%s/%s/%s/%s/"%(direc, variable, severity, time) # directory for a given variable, severity, time 
                         files = [f for f in os.listdir(thisDirec)]
@@ -171,13 +183,13 @@ if(__name__ == '__main__'):
                         exec("These_Values = np.copy(total_values)") 
                         os.system("mkdir -p %s"%(direc_ol))
                         os.system("cp %s/../index.php %s"%(direc_ol, direc_ol))
-                        upperRightText = upperRightTextDict[dataset]
-                        averages, stdevs = MakeETTPlot(These_Values, variable, severity, time, direc_ol, upperRightText, dataset) # make plots and return averages 
+                        upperRightText, lumi = upperRightTextDict[dataset]
+                        averages, stdevs = MakeETTPlot(These_Values, variable, severity, time, direc_ol, upperRightText, dataset, lumi) # make plots and return averages 
 
                         # save averages and stdevs as parquet files (choosing parquet for fun / experience) to combine everything later 
                         # save averages for each case: var, WP, PF, RECO, Sev, Time
 
-                        if(variable == "oneMinusEmuOverRealvstwrADCCourseBinning"):                                   
+                        if((variable == "oneMinusEmuOverRealvstwrADCCourseBinning") or (variable == "oneMinusEmuOverRealvstwrADCCourseBinningZoomed")):                                   
 
                             parquetOutDir = "output/%s/%s_%s_%s_%s/"%(dataset, variable, WP, PF, RECO)
                             os.system("mkdir -p %s"%(parquetOutDir))
@@ -210,12 +222,15 @@ if(__name__ == '__main__'):
                 "four" : "s"
             }   
 
-            error = 1 
+            error = 0
             log = 1
 
             # plot average lines on same plots
-            if(variable == "oneMinusEmuOverRealvstwrADCCourseBinning"):
+            if(variable == "oneMinusEmuOverRealvstwrADCCourseBinning" or variable == "oneMinusEmuOverRealvstwrADCCourseBinningZoomed"):
                 xbins, ybins = GetBins(variable, dataset)
+                ADCToGeV = 1 # if true, divide x axis values by 2 to get GeV 
+                if(ADCToGeV):
+                    xbins = [float(i)/2. for i in xbins]                
                 for time in times:
                     print("On time:",time)
                     for sev_i, severity in enumerate(severities):
@@ -271,39 +286,109 @@ if(__name__ == '__main__'):
                             stdevs = stdevs[MASK]  
                             xerrors = xerrors[MASK]
 
+
+
+
+
                             zero_errors = [0. for i in range(0, len(averages))]            
-                
+                        
+                            labelReplaceDict = {
+                                # "MinDelta": "$\delta_{min}$",
+                                # "0p5prime" : "0.5$^\prime$",
+                                # "2p5prime" : "2.5$^\prime$",
+                                # "zero" : "0",
+                                # "three" : "3",
+                                # "four" : "4"
+
+                                # "MinDelta": "$\delta_{min}$=",
+                                # "0p5prime" : "0.5 GeV",
+                                # "2p5prime" : "2.5 GeV",
+                                
+                                "MinDelta": "",
+                                "0p5prime" : "0.5",
+                                "2p5prime" : "2.5",
+
+                                # "Sevzero" : "EM signal",
+                                "Sevzero" : "",
+                                "three" : "3",
+                                "Sevfour" : "Spike",
+                                # "inTime" : "(-3$\leq$t$<$3) ns",
+                                # "inTime" : "|t|< 3 ns",
+                                "inTime" : "",
+                                # "VeryLate" : "t$\geq$10 ns"
+                                "VeryLate" : ""
+
+                            }
+                            # plotLabel = "Sev %s, %s, %s, %s, %s"%(severity, time, WP, PF, RECO)
+                            # plotLabel = "Sev%s, %s, %s"%(severity, time, WP)
+                            plotLabel = "%s"%(WP)
+                            for key in labelReplaceDict:
+                                val = labelReplaceDict[key]
+                                plotLabel = plotLabel.replace(key, val)
                             if(error):
-                                labelReplaceDict = {
-                                    "MinDelta": "$\delta_{min}$",
-                                    "0p5prime" : "0.5$^\prime$",
-                                    "2p5prime" : "2.5$^\prime$",
-                                    "zero" : "0",
-                                    "three" : "3",
-                                    "four" : "4"
-                                }
-                                plotLabel = "Sev %s, %s, %s, %s, %s"%(severity, time, WP, PF, RECO)
-                                for key in labelReplaceDict:
-                                    val = labelReplaceDict[key]
-                                    plotLabel = plotLabel.replace(key, val)
-                                plt.scatter(x = centered_energy_bins, y = averages, label = plotLabel, s = 15)
-                                plt.errorbar(x = centered_energy_bins, y = averages, xerr = xerrors, yerr = zero_errors, fmt = " ")  
+                                plt.scatter(x = centered_energy_bins[:-7], y = averages[:-7], label = plotLabel, s = 15) ### [:-7] = remove the final 7 points (hack)
+                                plt.errorbar(x = centered_energy_bins[:-7], y = averages[:-7], xerr = xerrors[:-7], yerr = zero_errors[:-7], fmt = " ")  
                             else:
-                                plt.scatter(x = energies, y = averages, label = plotLabel, s = 10, marker = shape, color = color)
+                                plt.scatter(x = centered_energy_bins[:-7], y = averages[:-7], label = plotLabel, s = 15)
+                                plt.plot(centered_energy_bins[:-7], averages[:-7], label = "__nolegend__", linestyle = '-')
 
+                        # plt.legend(loc = 'best', fontsize = 10)
 
-                        plt.legend(loc = 'best', fontsize = 10)
+                        plt.rcParams['legend.title_fontsize'] = 20
+                        plt.legend(loc = 'best', title = r"$\delta_{min}$ (GeV)", fontsize = 20, prop={'size' : 14})
+                        plt.rcParams['legend.title_fontsize'] = 20
+
                         plt.ylim(0, 1.01)
+                        print("xmax_ = 17")
+                        xmax_ = 17 
+
+                        EB_LABEL_XMIN = 0.18
+                        if(severity == "zero"):
+                            EB_LABEL_XMIN = 0.12 
+                            PlotTextLabel = "EM signal, |t|<3ns"
+                            xLabel = "Signal $E_{T}$ (GeV)"
+                        else:
+                            PlotTextLabel = "Spike, t$\geq$10 ns"
+                            xLabel = "Spike $E_{T}$ (GeV)"
+
                         plt.xlim(xmin_, xmax_)
-                        plt.xlabel("Real data TP Et (ADC)", fontsize=15)
+                        # plt.xlabel("Real data TP Et (ADC)", fontsize=15)
+                        plt.xlabel(xLabel, fontsize=15)
                         # plt.ylabel("Average 1 - (Emulated / Real)", fontsize=15)
-                        plt.ylabel("Average TP fraction subtracted", fontsize=15)
+                        # plt.ylabel("Average TP ET fraction subtracted", fontsize=15)
+                        plt.ylabel("Average $E_{T}$ fraction subtracted", fontsize=15)
                         plt.grid()
                         plt.xticks(fontsize = 15)
                         plt.yticks(fontsize = 15)
-                        upperRightText = upperRightTextDict[dataset]
-                        text_xmin = 0.135
-                        Add_CMS_Header(plt, ax, upperRightText, text_xmin)
+                        upperRightText, lumi = upperRightTextDict[dataset]
+                        addLumi = 1 
+
+                        # fontsize = 20
+                        # text_xmin = 0.14     
+                        fontsize = 16
+                        text_xmin = 0.15                               
+
+
+                                        
+                        Add_CMS_Header(plt, ax, upperRightText, text_xmin, addLumi, lumi, fontsize)
+                        plt.text(
+                            EB_LABEL_XMIN, 0.85, u"ECAL Barrel",
+                            fontsize=14, fontweight='bold',
+                            horizontalalignment='left',
+                            verticalalignment='bottom',
+                            transform=ax.transAxes
+                        )   
+
+                        plt.text(
+                            EB_LABEL_XMIN, 0.775, PlotTextLabel,
+                            fontsize=14, fontweight='bold',
+                            horizontalalignment='left',
+                            verticalalignment='bottom',
+                            transform=ax.transAxes
+                        )                           
+                                                                     
+                     
+                        
                         fig.tight_layout()
                         plt.savefig("%s/Sev_%s_%s_Average_%s_linear.png"%(ol, severity, time, varLabel), dpi = 300)
                         plt.savefig("%s/Sev_%s_%s_Average_%s_linear.pdf"%(ol, severity, time, varLabel), dpi = 300)   

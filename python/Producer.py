@@ -90,7 +90,7 @@ class HistProducer(ProcessorABC):
                     xVals = np.hstack(ak.to_list(df[hist['target_x']][selec])).flatten()
 
                     # for this variable, seems I need to specify the computation
-                    if(variable_name == "oneMinusEmuOverRealvstwrADCCourseBinning"):
+                    if((variable_name == "oneMinusEmuOverRealvstwrADCCourseBinning") or (variable_name == "oneMinusEmuOverRealvstwrADCCourseBinningZoomed")):
                         #print("min value:",min(ak.to_list(df["twrADC"]).flatten()))
                         yVals = np.hstack(ak.to_list((np.subtract(1., np.divide(df["twrEmul3ADC"], df["twrADC"])))[selec])).flatten() ## 'target_y' : '1 - (twrEmul3ADC/twrADC)',
 
@@ -121,7 +121,7 @@ class HistProducer(ProcessorABC):
 
     def passbut(self, event: LazyDataFrame, excut: str, cat: str, variable_name: str):
         """Backwards-compatible passbut."""
-        if(variable_name == "oneMinusEmuOverRealvstwrADCCourseBinning"): # add selection to not include TPs with ET = 0 
+        if( (variable_name == "oneMinusEmuOverRealvstwrADCCourseBinning") or (variable_name == "oneMinusEmuOverRealvstwrADCCourseBinningZoomed")): # add selection to not include TPs with ET = 0 
             evalStr = '&'.join('(' + cut.format(sys=('' if self.weight_syst else self.syst_suffix)) + ')' for cut in self.selection[cat] )
             evalStr += '&(event.twrADC != 0)'
             return eval(evalStr)#if excut not in cut))
@@ -130,6 +130,7 @@ class HistProducer(ProcessorABC):
 
 class ETT_NTuple(HistProducer):
 
+    addRunSelection = 1 
     SelectionsToRun = []
 
     sevDict = {
@@ -253,48 +254,62 @@ class ETT_NTuple(HistProducer):
         # },  
 
 
-        """
-        Useful for exploring the data
-        """
+        # """
+        # Useful for exploring the data
+        # """
 
-        'EnergyVsTimeOccupancy': {
-            # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
-            'target_x' : 'time',
-            'target_y' : 'twrADC',
-            'name': 'EnergyVsTimeOccupancy', 
-            # 'region' : ['clean_all', 'clean_tagged'],
-            'region' : SelectionsToRun,
-            'axes' : {
-                'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
-                'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256} # Full ET range           
-                # 'yaxis': {'label': 'twrADC', 'n_or_arr': 35, 'lo': 0, 'hi 35} # Low ET range                 
-            }
+        # 'EnergyVsTimeOccupancy': {
+        #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
+        #     'target_x' : 'time',
+        #     'target_y' : 'twrADC',
+        #     'name': 'EnergyVsTimeOccupancy', 
+        #     # 'region' : ['clean_all', 'clean_tagged'],
+        #     'region' : SelectionsToRun,
+        #     'axes' : {
+        #         'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
+        #         'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256} # Full ET range           
+        #         # 'yaxis': {'label': 'twrADC', 'n_or_arr': 35, 'lo': 0, 'hi 35} # Low ET range                 
+        #     }
 
-        },  
+        # },  
 
-        """
-        Useful for evaluating effect of emulation, e.g. double weights, on digis
-        """
+        # """
+        # Useful for evaluating effect of emulation, e.g. double weights, on digis
+        # """
 
-        ##-- 1 - emu/real 
-        'oneMinusEmuOverRealvstwrADCCourseBinning': {
+        # ##-- 1 - emu/real 
+        # 'oneMinusEmuOverRealvstwrADCCourseBinning': {
+        #     'target_x' : 'twrADC',
+        #     # 'target_y' : '(twrEmul3ADC/twrADC)',
+        #     'target_y' : 'oneMinusEmuOverRealvstwrADCCourseBinning',
+        #     'name': 'oneMinusEmuOverRealvstwrADCCourseBinning', 
+        #     'region' : SelectionsToRun, 
+        #     'axes' : {
+        #         # 'xaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}, 
+        #         'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], 'lo': 1, 'hi': 256}, 
+        #         # 'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0], 'lo': 1, 'hi': 40},
+        #         # 'xaxis': {'label': 'twrADC', 'n_or_arr': 40, 'lo': 1, 'hi': 41}, # Low ET range 
+        #         'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 48, 'lo': 0, 'hi': 1.2}                
+        #         # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 88, 'lo': -1, 'hi': 1.2}                
+        #         # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 128, 'lo': -2, 'hi': 1.2}                
+        #         # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 448, 'lo': -10, 'hi': 1.2}    ##-- 0.025 space bins in y axis             
+        #     }
+
+        # },  
+
+        ##-- 1 - emu/real zoomed
+        'oneMinusEmuOverRealvstwrADCCourseBinningZoomed': {
             'target_x' : 'twrADC',
             # 'target_y' : '(twrEmul3ADC/twrADC)',
-            'target_y' : 'oneMinusEmuOverRealvstwrADCCourseBinning',
-            'name': 'oneMinusEmuOverRealvstwrADCCourseBinning', 
+            'target_y' : 'oneMinusEmuOverRealvstwrADCCourseBinningZoomed',
+            'name': 'oneMinusEmuOverRealvstwrADCCourseBinningZoomed', 
             'region' : SelectionsToRun, 
             'axes' : {
-                # 'xaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}, 
-                'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], 'lo': 1, 'hi': 256}, 
-                # 'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0], 'lo': 1, 'hi': 40},
-                # 'xaxis': {'label': 'twrADC', 'n_or_arr': 40, 'lo': 1, 'hi': 41}, # Low ET range 
-                'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 48, 'lo': 0, 'hi': 1.2}                
-                # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 88, 'lo': -1, 'hi': 1.2}                
-                # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 128, 'lo': -2, 'hi': 1.2}                
-                # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 448, 'lo': -10, 'hi': 1.2}    ##-- 0.025 space bins in y axis             
+                'xaxis': {'label': 'twrADC', 'n_or_arr': 40, 'lo': 1, 'hi': 41}, # Low ET range 
+                'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinningZoomed', 'n_or_arr': 48, 'lo': 0, 'hi': 1.2}                
             }
 
-        },  
+        },          
 
         # 'EBOcc': {
         #     'target_x' : 'iphi',
@@ -374,6 +389,9 @@ class ETT_NTuple(HistProducer):
             selec_selections.append("event.time != -999") # don't include TPs which were not matched to a recHit 
             #selec_selections.append("event.twrADC != 0") # for anything with dividing, don't include TP = 0 ET entries
             selec_selections.append("event.sevlv == %s"%(sevNum))
+            if(addRunSelection): 
+                print("Adding run selection")
+                selec_selections.append("event.runNb == 324725")
             timeSels = time_regions[time]
             for timeSel in timeSels:
                 selec_selections.append(timeSel)
