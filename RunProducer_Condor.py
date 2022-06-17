@@ -6,11 +6,16 @@ The purpose of this module is to submit condor jobs to run the ETT coffea produc
 Example commands:
 
 # 2022 900 GeV collisions data analysis:
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --tag=oneFile -s --vars oneMinusEmuOverRealvstwrADCCourseBinningZoomed
+python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EnergyVsTimeOccupancy  --tag=oneFile -s
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --tag=oneFile -s --vars EnergyVsTimeOccupancy
 python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --tag=220615_220151 -s --vars oneMinusEmuOverRealvstwrADCCourseBinningZoomed
 
-Misc:
+Test:
 
+python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/" --vars EnergyVsTimeOccupancy  --tag=220214_122937 -s 
+python RunProducer_Condor.py --direc="/afs/cern.ch/work/a/atishelm/private/ETT_Coffea/TestInput/" --vars EnergyVsTimeOccupancy  --tag=111 -s 
+
+Misc:
 Thank you: https://research.cs.wisc.edu/htcondor/manual/v8.5/condor_submit.html
 https://github.com/htcondor/htcondor/blob/abbf76f596e935d5f2c2645e439cb3bee2eef9a7/src/condor_starter.V6.1/docker_proc.cpp ##-- Docker/HTCondor under the hood 
 
@@ -30,25 +35,33 @@ import glob
 logging.basicConfig(level=logging.DEBUG)
 
 script_TEMPLATE = """#!/bin/bash
-##source /cvmfs/cms.cern.ch/cmsset_default.sh
-
-##source /cvmfs/cms.cern.ch/cmsset_default.sh
-#source /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest
 export SCRAM_ARCH=slc7_amd64_gcc820
-
 echo
-echo $_CONDOR_SCRATCH_DIR
+echo "Changing to condor scratch directory: $_CONDOR_SCRATCH_DIR"
 cd   $_CONDOR_SCRATCH_DIR
 echo
 echo "... start job at" `date "+%Y-%m-%d %H:%M:%S"`
 echo "----- directory before running:"
 ls -lR .
-#echo "----- CMSSW BASE, python path, pwd:"
-#echo "+ CMSSW_BASE  = $CMSSW_BASE"
 echo "+ PYTHON_PATH = $PYTHON_PATH"
 echo "+ PWD         = $PWD"
 
-python RunProducer.py --jobNum=$1 --infile=$2 --treename="tuplizer/ETTAnalyzerTree" # command 
+echo "Copying input file $2 from EOS..."
+xrdcp root://cms-xrd-global.cern.ch/$2 Input_ETTAnalyzer_File.root 
+
+echo "Running producer..."
+python RunProducer.py --jobNum=$1 --infile=Input_ETTAnalyzer_File.root --treename="tuplizer/ETTAnalyzerTree" 
+
+echo "Copying output file(s) to EOS..."
+PATHS="$3"
+
+for i in "$(arrIN[@])"
+do
+   : 
+   IFS='=' read outputFile outputEOSLocation <<< "$i"
+   xrdcp $outputFile root://cms-xrd-global.cern.ch/{outputFileDirectory}$outputEOSLocation
+
+done
 
 echo "----- directory after running :"
 ls -lR .
@@ -60,23 +73,24 @@ condor_TEMPLATE = """
 request_disk          = 2048
 request_memory = 8000
 executable            = {jobdir}/script.sh
-arguments             = $(ProcId) $(jobid) 
-transfer_input_files = {transfer_files}, $(jobid)
+arguments             = $(ProcId) $(jobid) {transfer_output_remaps}
+# transfer_input_files = {transfer_files},$(jobid)
+transfer_input_files = {transfer_files}
 
-# environment = "LD_LIBRARY_PATH_STORED=/eos" 
+#environment = "LD_LIBRARY_PATH_STORED=/eos" 
 
 output                = $(ClusterId).$(ProcId).out
 error                 = $(ClusterId).$(ProcId).err
 log                   = $(ClusterId).$(ProcId).log
 initialdir            = {jobdir}
 
-transfer_output_remaps = "{transfer_output_remaps}"
+#transfer_output_remaps = "{transfer_output_remaps}"
 
 #Requirements = HasSingularity
 +JobFlavour           = "{queue}"
 #+SingularityImage = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest"
 
-HasDocker = true
+#HasDocker = true
 universe = docker
 docker_image = coffeateam/coffea-dask:latest
 
@@ -85,7 +99,7 @@ queue jobid from {jobdir}/inputfiles.dat
 
 def main():
     parser = argparse.ArgumentParser(description='Famous Submitter')
-    parser.add_argument("-t"   , "--tag"   , type=str, default="Exorcism"  , help="production tag", required=True)
+    parser.add_argument("-t"   , "--tag"   , type=str, default="NoTag"  , help="production tag", required=True)
     parser.add_argument("-q"   , "--queue" , type=str, default="espresso", help="")
     parser.add_argument("-f"   , "--force" , action="store_true"          , help="recreate files and jobs")
     parser.add_argument("-s"   , "--submit", action="store_true"          , help="submit only")
@@ -97,16 +111,16 @@ def main():
     vars = options.vars.split(',')
 
     indir = "{}/{}/".format(options.direc, options.tag)
+    samples = os.listdir(indir)
+    # StringsToSkip = ["merged", "output"]
 
-    for sample in os.listdir(indir):
-        if "merged" in sample:
-            continue
-        if "WS" in sample:
-            continue
-        if "output" in sample:
+    for sample in samples:
+        if("output" in sample): 
+            print("Skipping directory:",sample)
             continue 
 
         jobs_dir = '_'.join(['jobs', options.tag, sample])
+        print("jobs_dir:",jobs_dir)
         logging.info("-- sample_name : " + sample)
 
         if os.path.isdir(jobs_dir):
@@ -126,7 +140,7 @@ def main():
             infiles.close()
 
         times = ["all", "inTime", "Early", "Late", "VeryLate"]
-        severities = ["zero", "three", "four"]
+        severities = ["all", "zero", "three", "four"]
 
         outdir = indir + sample + "_output/"
         os.system("mkdir -p {}".format(outdir))
@@ -140,8 +154,13 @@ def main():
                     os.system("mkdir -p {}".format(outdir_perVarSevTime))
 
         with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
+            # script = script_TEMPLATE.format(
+                # outputdir=outdir
+            # )
+            outputFileDirectory = "%s%s_output"%(indir, sample)
+            print("outputFileDirectory:",outputFileDirectory)
             script = script_TEMPLATE.format(
-                outputdir=outdir
+                outputFileDirectory=outputFileDirectory
             )
             scriptfile.write(script)
             scriptfile.close()
@@ -157,15 +176,20 @@ def main():
             # depends on variables being output
 
             times = ["all", "inTime", "Early", "Late", "VeryLate"]
-            severities = ["zero", "three", "four"]
+            severities = ["all", "zero", "three", "four"]
+            FGSelections = ["all", "Tagged"] # all: all TPs. Tagged: FGbit=1
 
             transfer_files = []
 
             for var in vars:
                 for sev in severities:
                     for time in times:
-                        transfer_file = "{var}_sev{sev}_{time}_values.p={output_dir}/{var}/{sev}/{time}/{var}_sev{sev}_{time}_values_$(ProcId).p".format(var=var, sev=sev, time=time, output_dir = outdir)
-                        transfer_files.append(transfer_file)
+                        for FGSel in FGSelections: 
+                            # transfer_file = "{var}_sev{sev}_{time}_{FGSel}_values.p={output_dir}/{var}/{sev}/{time}/{var}_sev{sev}_{time}_{FGSel}_values_$(ProcId).p".format(var=var, sev=sev, time=time, output_dir = outdir, FGSel=FGSel)
+                            
+                            # without output_dir, to make string significantly shorter 
+                            transfer_file = "{var}_sev{sev}_{time}_{FGSel}_values.p=/{var}/{sev}/{time}/{var}_sev{sev}_{time}_{FGSel}_values_$(ProcId).p".format(var=var, sev=sev, time=time, output_dir = outdir, FGSel=FGSel)
+                            transfer_files.append(transfer_file)
 
             transfer_output_remaps = str(";".join(transfer_files))
 

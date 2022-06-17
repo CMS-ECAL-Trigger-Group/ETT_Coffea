@@ -205,12 +205,9 @@ def ComputeAverages(xbins_, Values_array_):
 def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dataset, lumi):
     print("Making plot")
 
-
-
     # parameters 
     #upperRightText = "Pilot Beam 2021"
     
-
     # Prepare figure and axes 
     fig, ax = plt.subplots()
     fig.set_dpi(100)

@@ -2,6 +2,11 @@
 18 August 2021 
 
 The purpose of this module is to run a coffea producer to process root files. 
+
+Example usage:
+singularity shell -B ${PWD} -B /afs -B /eos /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest
+python3 RunProducer.py --inDir="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/oneFile/oneFile/" --treename="tuplizer/ETTAnalyzerTree" --outDir="/eos/user/a/atishelm/www/EcalL1Optimization/ETT_Coffea_singleFile/" --condor="0"
+
 """
 
 import os
