@@ -6,14 +6,9 @@ The purpose of this module is to submit condor jobs to run the ETT coffea produc
 Example commands:
 
 # 2022 900 GeV collisions data analysis:
+python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EnergyVsTimeOccupancy  --tag=FewFiles -s
+python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EnergyVsTimeOccupancy  --tag=220615_220151 -s
 python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EnergyVsTimeOccupancy  --tag=oneFile -s
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --tag=oneFile -s --vars EnergyVsTimeOccupancy
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --tag=220615_220151 -s --vars oneMinusEmuOverRealvstwrADCCourseBinningZoomed
-
-Test:
-
-python RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_324725_306425_FullReadoutData/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/" --vars EnergyVsTimeOccupancy  --tag=220214_122937 -s 
-python RunProducer_Condor.py --direc="/afs/cern.ch/work/a/atishelm/private/ETT_Coffea/TestInput/" --vars EnergyVsTimeOccupancy  --tag=111 -s 
 
 Misc:
 Thank you: https://research.cs.wisc.edu/htcondor/manual/v8.5/condor_submit.html
@@ -46,51 +41,63 @@ ls -lR .
 echo "+ PYTHON_PATH = $PYTHON_PATH"
 echo "+ PWD         = $PWD"
 
-echo "Copying input file $2 from EOS..."
-xrdcp root://cms-xrd-global.cern.ch/$2 Input_ETTAnalyzer_File.root 
+#echo "Copying input file $2 from EOS..."
+#echo "$ xrdcp root://eoscms.cern.ch/$2 Input_ETTAnalyzer_File.root"
+#xrdcp root://eoscms.cern.ch/$2 Input_ETTAnalyzer_File.root 
 
-echo "Running producer..."
-python RunProducer.py --jobNum=$1 --infile=Input_ETTAnalyzer_File.root --treename="tuplizer/ETTAnalyzerTree" 
+#echo "Running producer..."
+#echo '$ python RunProducer.py --jobNum=$1 --infile=Input_ETTAnalyzer_File.root --treename="tuplizer/ETTAnalyzerTree" '
+#python RunProducer.py --jobNum=$1 --infile=Input_ETTAnalyzer_File.root --treename="tuplizer/ETTAnalyzerTree" 
 
-echo "Copying output file(s) to EOS..."
-PATHS="$3"
+python RunProducer.py --jobNum=$1 --infile=$2 --treename="tuplizer/ETTAnalyzerTree" 
 
-for i in "$(arrIN[@])"
-do
-   : 
-   IFS='=' read outputFile outputEOSLocation <<< "$i"
-   xrdcp $outputFile root://cms-xrd-global.cern.ch/{outputFileDirectory}$outputEOSLocation
-
-done
-
-echo "----- directory after running :"
+echo "Directory after running producer..."
+echo "$ ls -lR ."
 ls -lR .
+
+# echo "Copying output file(s) to EOS..."
+# PATHS="$3"
+# arrIN=(${PATHS//;/ })
+
+# for i in "${arrIN[@]}"
+# do
+#    : 
+#    IFS='=' read outputFile outputEOSLocation <<< "$i"
+
+#    #pathArray=(${outputEOSLocation//// })
+#    #outFileName=${pathArray[-1]}
+#    #echo "$ mv $outputFile $outFileName"
+#    #mv $outputFile $outFileName
+
+#    # DirecOutput=`dirname root://eoscms.cern.ch/$outputEOSLocation`
+    
+#    echo "$ xrdcp $outputFile root://eoscms.cern.ch/$outputEOSLocation"
+#    xrdcp $outputFile root://eoscms.cern.ch/$outputEOSLocation
+
+# done
+
+# echo "Directory after copying files to EOS..."
+# echo "$ ls -lR ."
+# ls -lR .
+
 echo " ------ DONE ----- "
 """
 
 condor_TEMPLATE = """
-#request_disk          = 1024
 request_disk          = 2048
 request_memory = 8000
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) {transfer_output_remaps}
-# transfer_input_files = {transfer_files},$(jobid)
-transfer_input_files = {transfer_files}
-
-#environment = "LD_LIBRARY_PATH_STORED=/eos" 
+transfer_input_files = {transfer_files}, $(jobid)
+transfer_output_remaps="{transfer_output_remaps}"
 
 output                = $(ClusterId).$(ProcId).out
 error                 = $(ClusterId).$(ProcId).err
 log                   = $(ClusterId).$(ProcId).log
 initialdir            = {jobdir}
 
-#transfer_output_remaps = "{transfer_output_remaps}"
-
-#Requirements = HasSingularity
 +JobFlavour           = "{queue}"
-#+SingularityImage = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest"
 
-#HasDocker = true
 universe = docker
 docker_image = coffeateam/coffea-dask:latest
 
@@ -100,7 +107,7 @@ queue jobid from {jobdir}/inputfiles.dat
 def main():
     parser = argparse.ArgumentParser(description='Famous Submitter')
     parser.add_argument("-t"   , "--tag"   , type=str, default="NoTag"  , help="production tag", required=True)
-    parser.add_argument("-q"   , "--queue" , type=str, default="espresso", help="")
+    parser.add_argument("-q"   , "--queue" , type=str, default="microcentury", help="")
     parser.add_argument("-f"   , "--force" , action="store_true"          , help="recreate files and jobs")
     parser.add_argument("-s"   , "--submit", action="store_true"          , help="submit only")
     parser.add_argument("-dry" , "--dryrun", action="store_true"          , help="running without submission")
@@ -110,9 +117,15 @@ def main():
     options = parser.parse_args()
     vars = options.vars.split(',')
 
+    # times = ["all", "inTime", "Early", "Late", "VeryLate"]
+    times = ["all"]
+    # severities = ["all", "zero", "three", "four"]
+    severities = ["all"]
+    # severities = ["zero"]
+    FGSelections = ["all", "Tagged"] # all: all TPs. Tagged: FGbit=1
+
     indir = "{}/{}/".format(options.direc, options.tag)
     samples = os.listdir(indir)
-    # StringsToSkip = ["merged", "output"]
 
     for sample in samples:
         if("output" in sample): 
@@ -136,11 +149,9 @@ def main():
         with open(os.path.join(jobs_dir, "inputfiles.dat"), 'w') as infiles:
             in_files = glob.glob("{indir}/{sample}/*.root".format(sample=sample, indir=indir))
             for name in in_files:
+                name = name.replace("/eos/", "root://eoscms.cern.ch//eos/")
                 infiles.write(name+"\n")
             infiles.close()
-
-        times = ["all", "inTime", "Early", "Late", "VeryLate"]
-        severities = ["all", "zero", "three", "four"]
 
         outdir = indir + sample + "_output/"
         os.system("mkdir -p {}".format(outdir))
@@ -154,14 +165,7 @@ def main():
                     os.system("mkdir -p {}".format(outdir_perVarSevTime))
 
         with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
-            # script = script_TEMPLATE.format(
-                # outputdir=outdir
-            # )
-            outputFileDirectory = "%s%s_output"%(indir, sample)
-            print("outputFileDirectory:",outputFileDirectory)
-            script = script_TEMPLATE.format(
-                outputFileDirectory=outputFileDirectory
-            )
+            script = script_TEMPLATE
             scriptfile.write(script)
             scriptfile.close()
 
@@ -172,23 +176,14 @@ def main():
                 "../python/SumWeights.py"
             ]
 
-            # output files 
-            # depends on variables being output
-
-            times = ["all", "inTime", "Early", "Late", "VeryLate"]
-            severities = ["all", "zero", "three", "four"]
-            FGSelections = ["all", "Tagged"] # all: all TPs. Tagged: FGbit=1
-
             transfer_files = []
 
             for var in vars:
                 for sev in severities:
                     for time in times:
                         for FGSel in FGSelections: 
-                            # transfer_file = "{var}_sev{sev}_{time}_{FGSel}_values.p={output_dir}/{var}/{sev}/{time}/{var}_sev{sev}_{time}_{FGSel}_values_$(ProcId).p".format(var=var, sev=sev, time=time, output_dir = outdir, FGSel=FGSel)
-                            
-                            # without output_dir, to make string significantly shorter 
-                            transfer_file = "{var}_sev{sev}_{time}_{FGSel}_values.p=/{var}/{sev}/{time}/{var}_sev{sev}_{time}_{FGSel}_values_$(ProcId).p".format(var=var, sev=sev, time=time, output_dir = outdir, FGSel=FGSel)
+                            transfer_file = "{var}_sev{sev}_{time}_{FGSel}_values.p={output_dir}/{var}/{sev}/{time}/{var}_sev{sev}_{time}_{FGSel}_values_$(ProcId).p".format(var=var, sev=sev, time=time, output_dir = outdir, FGSel=FGSel)
+                            transfer_file = transfer_file.replace("/eos/", "root://eoscms.cern.ch//eos/")
                             transfer_files.append(transfer_file)
 
             transfer_output_remaps = str(";".join(transfer_files))

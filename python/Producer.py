@@ -139,8 +139,11 @@ class ETT_NTuple(HistProducer):
         "four" : "4"
     }
 
-    severities = ["all", "zero", "three", "four"]
-    times = ["all", "inTime", "Early", "Late", "VeryLate"]
+    # severities = ["all", "zero", "three", "four"]
+    # severities = ["zero"]
+    severities = ["all"]
+    times = ["all"]
+    # times = ["all", "inTime", "Early", "Late", "VeryLate"]
     FGSelections = ["all", "Tagged"] # all: all TPs. Tagged: FGbit=1
 
     for severity in severities:
@@ -328,21 +331,24 @@ class ETT_NTuple(HistProducer):
 
         # },          
 
-        'realVsEmu': {
-            # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
-            'target_x' : 'twrEmul3ADC',
-            'target_y' : 'twrADC',
-            'name': 'realVsEmu', 
-            # 'region': ["clean"],
-            'region' : SelectionsToRun,
-            'axes' : {
-                'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
-                'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
-                # 'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256},
-                # 'yaxis': {'label': 'twrADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256}                
-            }
 
-        },  
+        
+
+        # 'realVsEmu': {
+        #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
+        #     'target_x' : 'twrEmul3ADC',
+        #     'target_y' : 'twrADC',
+        #     'name': 'realVsEmu', 
+        #     # 'region': ["clean"],
+        #     'region' : SelectionsToRun,
+        #     'axes' : {
+        #         'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
+        #         'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+        #         # 'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256},
+        #         # 'yaxis': {'label': 'twrADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256}                
+        #     }
+# 
+        # },  
 
     }
 
@@ -354,7 +360,8 @@ class ETT_NTuple(HistProducer):
         "VeryLate" : ["event.time >= 10"]
     }
 
-    severities = ["all", "zero", "three", "four"]
+    # severities = ["all", "zero", "three", "four"]
+    severities = ["all"]
 
     sevDict = {
         "all" : "all",
@@ -362,7 +369,8 @@ class ETT_NTuple(HistProducer):
         "three" : "3",
         "four" : "4"
     }
-    times = ["all", "inTime", "Early", "Late", "VeryLate"]
+    # times = ["all", "inTime", "Early", "Late", "VeryLate"]
+    times = ["all"]
 
     FGSelections = ["all", "Tagged"] # all: all TPs. Tagged: FGbit=1
 
