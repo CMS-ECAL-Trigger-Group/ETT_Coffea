@@ -8,6 +8,9 @@ Example commands:
 
 conda activate higgs-dna # to create parquet files 
 
+# 2022 Collisions 
+python3 ETTPlot.py --dataset Run352912 --variables EnergyVsTimeOccupancy  --maxFiles 3077 --times all --severities all --plotIndividuals
+
 # Full readout data from 2017/2018 
 python3 ETTPlot.py --dataset FullReadoutData_2018 --variables oneMinusEmuOverRealvstwrADCCourseBinningZoomed  --maxFiles 1000000  --plotTogether --fromParquet --times inTime --severities zero
 python3 ETTPlot.py --dataset FullReadoutData_2018 --variables EnergyVsTimeOccupancy,oneMinusEmuOverRealvstwrADCCourseBinning  --maxFiles 1000000  --plotTogether --fromParquet
@@ -76,7 +79,8 @@ plotIndividuals = args.plotIndividuals
 plotTogether = args.plotTogether
 fromParquet = args.fromParquet
 
-ol = "/eos/user/a/atishelm/www/EcalL1Optimization/{dataset}/AllWorkingPoints/".format(dataset=dataset)
+ol = "/eos/user/a/atishelm/www/EcalL1Optimization/{dataset}/".format(dataset=dataset)
+# ol = "/eos/user/a/atishelm/www/EcalL1Optimization/{dataset}/AllWorkingPoints/".format(dataset=dataset)
 
 # For real vs. emu plots:
 # zmax = args.zmax 
@@ -120,9 +124,19 @@ elif(dataset == "PilotBeam2021"):
         "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/220209_125921/all_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta2p5prime_WithOddPF_MultiFitReco/",    
     }
 
+elif(dataset == "Run352912"):
+    directories = [
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/220615_220151/allFiles_output/"
+    ]
+
+    direc_ol_dict = {
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/220615_220151/allFiles_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/2022Collisions/Run_352912/Reemul_by_globalTag/"
+    }
+
 upperRightTextDict = {
     "PilotBeam2021" : ["Pilot Beam 2021", "XXX"], # label, lumi (fb-1)
-    "FullReadoutData_2018" : ["FR 2018", "0.014"] # label, lumi (fb-1)
+    "FullReadoutData_2018" : ["FR 2018", "0.014"], # label, lumi (fb-1)
+    "Run352912" : ["Run 352912", "145", "{\mu}b", "900 GeV"]
 }
 
 if(__name__ == '__main__'):
@@ -148,7 +162,11 @@ if(__name__ == '__main__'):
         if(plotIndividuals):
             for direc in directories:
                 print("direc:",direc)
-                WP, PF, RECO = GetWorkingPointLabels(direc)
+                if("Run_352912" in direc): 
+                    print("Assuming certain reco methods because Run 352912")
+                    WP, PF, RECO = "MinDelta2p5prime", "WithOddPeakFinder", "Weights"
+                    # not varying working points 
+                else: WP, PF, RECO = GetWorkingPointLabels(direc) # if varying working points 
 
                 direc_ol = direc_ol_dict[direc]
 
@@ -161,50 +179,58 @@ if(__name__ == '__main__'):
                             continue 
                         if((variable == "EnergyVsTimeOccupancy") and (time != "all")):
                             print("Already plotted EnergyVsTimeOccupancy for all times for given severity")
-                            continue                         
-                        print("On Var: %s, Sev: %s, time: %s"%(variable, severity, time))
-                        thisDirec = "%s/%s/%s/%s/"%(direc, variable, severity, time) # directory for a given variable, severity, time 
-                        files = [f for f in os.listdir(thisDirec)]
-                        n_files = len(files)
-                        values_0 = pickle.load(open("%s/%s_sev%s_%s_values_0.p"%(thisDirec, variable, severity, time), "rb"))
-                        values_1 = pickle.load(open("%s/%s_sev%s_%s_values_1.p"%(thisDirec, variable, severity, time), "rb"))
-                        total_values = np.add(values_0, values_1)
-                        for i in range(n_files):
-                            if(i > maxFiles):
-                                print("Max files reached: ",i)
-                                break 
-                            if(i == 0 or i == 1): continue 
-                            if(i%100 == 0): print("on file %s / %s"%(i, n_files))
+                            continue      
+                        for FGSelection in ["all", "Tagged"]:
+                            print("FGSelection:",FGSelection)
+                            print("On Var: %s, Sev: %s, time: %s"%(variable, severity, time))
+                            thisDirec = "%s/%s/%s/%s/"%(direc, variable, severity, time) # directory for a given variable, severity, time 
+                            files = [f for f in os.listdir(thisDirec)]
+                            n_files = len(files)
+                            values_0 = pickle.load(open("%s/%s_sev%s_%s_%s_values_0.p"%(thisDirec, variable, severity, time, FGSelection), "rb")) # EnergyVsTimeOccupancy_sevall_all_all_values_3040.p
+                            values_1 = pickle.load(open("%s/%s_sev%s_%s_%s_values_1.p"%(thisDirec, variable, severity, time, FGSelection), "rb"))
+                            total_values = np.add(values_0, values_1)
+                            for i in range(n_files):
+                                if(i > maxFiles):
+                                    print("Max files reached: ",i)
+                                    break 
+                                if(i == 0 or i == 1): continue 
+                                if(i%100 == 0): print("on file %s / %s"%(i, n_files))
 
-                            exec('thisValues = pickle.load(open("%s/%s_sev%s_%s_values_%s.p"%(thisDirec, variable, severity, time, i), "rb"))')  
-                            total_values = np.add(total_values, thisValues)
+                                exec('thisValues = pickle.load(open("%s/%s_sev%s_%s_%s_values_%s.p"%(thisDirec, variable, severity, time, FGSelection, i), "rb"))')  
+                                total_values = np.add(total_values, thisValues)
 
-                        exec("%s_%s_%s_values = np.copy(total_values)"%(variable, severity, time)) # copy with unique name to plot together on same plot later 
-                        exec("These_Values = np.copy(total_values)") 
-                        os.system("mkdir -p %s"%(direc_ol))
-                        os.system("cp %s/../index.php %s"%(direc_ol, direc_ol))
-                        upperRightText, lumi = upperRightTextDict[dataset]
-                        averages, stdevs = MakeETTPlot(These_Values, variable, severity, time, direc_ol, upperRightText, dataset, lumi) # make plots and return averages 
+                            exec("%s_%s_%s_values = np.copy(total_values)"%(variable, severity, time)) # copy with unique name to plot together on same plot later 
+                            exec("These_Values = np.copy(total_values)") 
+                            os.system("mkdir -p %s"%(direc_ol))
+                            os.system("cp %s/../index.php %s"%(direc_ol, direc_ol))
+                            upperRightText, lumi, unit, sqrts = upperRightTextDict[dataset]
+                            averages, stdevs = MakeETTPlot(These_Values, variable, severity, time, direc_ol, upperRightText, dataset, lumi, unit, sqrts, FGSelection) # make plots and return averages 
 
-                        # save averages and stdevs as parquet files (choosing parquet for fun / experience) to combine everything later 
-                        # save averages for each case: var, WP, PF, RECO, Sev, Time
+                            exec("%s_Values = np.copy(These_Values)"%(FGSelection))                                
 
-                        if((variable == "oneMinusEmuOverRealvstwrADCCourseBinning") or (variable == "oneMinusEmuOverRealvstwrADCCourseBinningZoomed")):                                   
+                            # save averages and stdevs as parquet files (choosing parquet for fun / experience) to combine everything later 
+                            # save averages for each case: var, WP, PF, RECO, Sev, Time
 
-                            parquetOutDir = "output/%s/%s_%s_%s_%s/"%(dataset, variable, WP, PF, RECO)
-                            os.system("mkdir -p %s"%(parquetOutDir))
-                            outName_averages = "%s/%s_%s_%s_%s_%s_%s_averages.parquet"%(parquetOutDir, variable, WP, PF, RECO, severity, time)
-                            outName_stdevs = "%s/%s_%s_%s_%s_%s_%s_stdevs.parquet"%(parquetOutDir, variable, WP, PF, RECO, severity, time)
+                            if((variable == "oneMinusEmuOverRealvstwrADCCourseBinning") or (variable == "oneMinusEmuOverRealvstwrADCCourseBinningZoomed")):                                   
 
-                            averages_table = pa.table({"data": averages})
-                            stdevs_table = pa.table({"data": stdevs})
-                            print("Saving parquet file:",outName_averages)   
-                            print("Saving parquet file:",outName_stdevs)                   
-                            pa.parquet.write_table(averages_table, outName_averages)                
-                            pa.parquet.write_table(stdevs_table, outName_stdevs)    
+                                parquetOutDir = "output/%s/%s_%s_%s_%s/"%(dataset, variable, WP, PF, RECO)
+                                os.system("mkdir -p %s"%(parquetOutDir))
+                                outName_averages = "%s/%s_%s_%s_%s_%s_%s_averages.parquet"%(parquetOutDir, variable, WP, PF, RECO, severity, time)
+                                outName_stdevs = "%s/%s_%s_%s_%s_%s_%s_stdevs.parquet"%(parquetOutDir, variable, WP, PF, RECO, severity, time)
 
-                            exec("%s_%s_averages = np.copy(averages)"%(severity, time))
-                            exec("%s_%s_stdevs = np.copy(stdevs)"%(severity, time))
+                                averages_table = pa.table({"data": averages})
+                                stdevs_table = pa.table({"data": stdevs})
+                                print("Saving parquet file:",outName_averages)   
+                                print("Saving parquet file:",outName_stdevs)                   
+                                pa.parquet.write_table(averages_table, outName_averages)                
+                                pa.parquet.write_table(stdevs_table, outName_stdevs)    
+
+                                exec("%s_%s_averages = np.copy(averages)"%(severity, time))
+                                exec("%s_%s_stdevs = np.copy(stdevs)"%(severity, time))
+
+                        # Make ratio of tagged / all to see which region of phase space is tagged by double weights 
+                        fraction = np.divide(Tagged_Values, all_Values, out=np.zeros_like(Tagged_Values), where=all_Values!=0)
+                        averages, stdevs = MakeETTPlot(fraction, variable, severity, time, direc_ol, upperRightText, dataset, lumi, unit, sqrts, "ratio") # make plots and return averages 
 
         if(plotTogether):
 
@@ -286,41 +312,19 @@ if(__name__ == '__main__'):
                             stdevs = stdevs[MASK]  
                             xerrors = xerrors[MASK]
 
-
-
-
-
                             zero_errors = [0. for i in range(0, len(averages))]            
                         
                             labelReplaceDict = {
-                                # "MinDelta": "$\delta_{min}$",
-                                # "0p5prime" : "0.5$^\prime$",
-                                # "2p5prime" : "2.5$^\prime$",
-                                # "zero" : "0",
-                                # "three" : "3",
-                                # "four" : "4"
-
-                                # "MinDelta": "$\delta_{min}$=",
-                                # "0p5prime" : "0.5 GeV",
-                                # "2p5prime" : "2.5 GeV",
-                                
                                 "MinDelta": "",
                                 "0p5prime" : "0.5",
                                 "2p5prime" : "2.5",
 
-                                # "Sevzero" : "EM signal",
                                 "Sevzero" : "",
                                 "three" : "3",
                                 "Sevfour" : "Spike",
-                                # "inTime" : "(-3$\leq$t$<$3) ns",
-                                # "inTime" : "|t|< 3 ns",
                                 "inTime" : "",
-                                # "VeryLate" : "t$\geq$10 ns"
                                 "VeryLate" : ""
-
                             }
-                            # plotLabel = "Sev %s, %s, %s, %s, %s"%(severity, time, WP, PF, RECO)
-                            # plotLabel = "Sev%s, %s, %s"%(severity, time, WP)
                             plotLabel = "%s"%(WP)
                             for key in labelReplaceDict:
                                 val = labelReplaceDict[key]
@@ -475,7 +479,7 @@ if(__name__ == '__main__'):
 
     """
 
-    # Real vs emu plots, maybe 
+    # 2d plots 
 
     """
 

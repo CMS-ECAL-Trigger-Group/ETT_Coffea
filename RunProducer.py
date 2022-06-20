@@ -55,9 +55,11 @@ if float(options.nevt) > 0:
 modules = []
 
 for dim in dims:
+    severities = ["all", "zero", "three", "four"]
     modules.append( ETT_NTuple( dim=dim,
                                 do_syst=1, 
                                 syst_var='', 
+                                severities=severities,
                                 haddFileName="tree_%s.root" % str(options.jobNum)))             
 
 for i in modules:

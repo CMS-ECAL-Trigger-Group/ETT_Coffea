@@ -10,6 +10,7 @@ import matplotlib
 from matplotlib import pyplot as plt 
 from matplotlib.colors import LogNorm, SymLogNorm
 import copy 
+import matplotlib as mpl
 
 def GetWorkingPointLabels(direc_):
     if("0p5Prime" in direc_):
@@ -35,7 +36,7 @@ def GetWorkingPointLabels(direc_):
 
     return WP, PF, RECO
 
-def Add_CMS_Header(plt, ax, upperRightText, xmin, addLumi, lumi, fontsize):
+def Add_CMS_Header(plt, ax, upperRightText, xmin, addLumi, lumi, fontsize, unit, sqrts):
     
     plt.text(
         0., 1., u"CMS ",
@@ -71,9 +72,10 @@ def Add_CMS_Header(plt, ax, upperRightText, xmin, addLumi, lumi, fontsize):
     # )  
 
     if(addLumi):
-        upperRightText = r"%s fb$^{-1}$ (13 TeV)"%(str(lumi))
+        upperRightText = r"%s $%s^{-1}$ (%s)"%(str(lumi), str(unit), str(sqrts))
+        # upperRightText = r"%s fb$^{-1}$ (13 TeV)"%(str(lumi))
     else:
-        upperRightText = r"(13 TeV)"
+        upperRightText = r"(%s)"%(sqrts)
 
     ##-- Lumi 
     plt.text(
@@ -104,7 +106,7 @@ def SetYMax(Values_array_, ymax_, binWidth_, ybins):
     ymax_bin_i = ymax_ # for [0, 256] with 1 spaced binnings 
     for i, xBinVals in enumerate(Values_array_):
         nVals = len(xBinVals)
-        MASK = [i < ((ymax_bin_i) + 1) for i, val in enumerate(xBinVals)]
+        MASK = [i < ((ymax_bin_i)) for i, val in enumerate(xBinVals)]
         xBinVals = xBinVals[MASK]
         Transformed_List.append(xBinVals)        
     Transformed_List = np.array(Transformed_List)
@@ -137,6 +139,14 @@ def GetBins(varLabel_, dataset_):
         binDict = {
             "realVsEmu" : [[0, 256, 256], [0, 256, 256]],
             "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 35, 35]], # shorter ET range 
+            "EnergyVsTimeOccupancy_ratio" : [[-50, 50, 100],[0, 35, 35]],
+            "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1, 41, 40], [0, 1.2, 48]]
+        }
+    elif(dataset_ == "Run352912"):
+        binDict = {
+            "realVsEmu" : [[0, 256, 256], [0, 256, 256]],
+            "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 256, 256]], # Full ET range 
+            # "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 35, 35]], # shorter ET range 
             "EnergyVsTimeOccupancy_ratio" : [[-50, 50, 100],[0, 35, 35]],
             "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1, 41, 40], [0, 1.2, 48]]
         }
@@ -202,12 +212,9 @@ def ComputeAverages(xbins_, Values_array_):
     
     return averages, stdevs 
 
-def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dataset, lumi):
-    print("Making plot")
+def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dataset, lumi, unit, sqrts, FGSelection):
+    print("Making plot")  
 
-    # parameters 
-    #upperRightText = "Pilot Beam 2021"
-    
     # Prepare figure and axes 
     fig, ax = plt.subplots()
     fig.set_dpi(100)
@@ -215,6 +222,10 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
     cmap = copy.copy(matplotlib.cm.get_cmap("jet"))
     cmap.set_under(color='white')     
     xbins, ybins = GetBins(variable_, dataset)
+
+    ymax = 35
+    binWidth = 1 
+    Values_array, ybins = SetYMax(Values_array, ymax, binWidth, ybins)      
 
     # plot with colormesh 
     # if(isRatio): 
@@ -224,10 +235,10 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
     # if(doSymLog): 
         # norm = norm = SymLogNorm(linthresh=0.03, vmin = vmin)
     # else: 
-        # norm = None 
+        # norm = None     
 
     if(variable_ == "EnergyVsTimeOccupancy"):
-        normalize = 1
+        normalize = 0
     else:
         normalize = 0 
 
@@ -236,17 +247,31 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
         Values_array = Values_array / maxVal 
         vmin = 0.000000001
         zLabel = "Fraction"
+        norm = LogNorm(vmin=vmin)
 
     else: 
         vmin = 1 
         zLabel = "Entries"
+
+    # If plotting the ratio, don't want the min z value to be 1. 
+    if(FGSelection == "ratio"): 
+        normalize = 0
+        vmin = 0.000000001
+        vmax = 1 
+        zLabel = "Fraction"
+        norm = None 
+        norm = norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+    else:
+        maxVal = np.max(Values_array)
+        vmax = maxVal
+        norm = LogNorm(vmin=vmin, vmax=vmax)
 
     pos = ax.pcolormesh(xbins, 
                         ybins, 
                         Values_array.transpose(1,0), 
                         cmap = cmap, 
                         # vmin = vmin,
-                        norm = LogNorm(vmin=vmin),
+                        norm = norm,
                         #vmax = vmax,
                         # norm = norm
                         )
@@ -261,9 +286,10 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
     plt.xlabel(xLabel, fontsize=25)
     plt.ylabel(yLabel, fontsize=25)
     addLumi = 1
-    fontsize = 22.5
+    # fontsize = 22.5
+    fontsize = 18
     text_xmin = 0.12
-    Add_CMS_Header(plt, ax, upperRightText, text_xmin, addLumi, lumi, fontsize)
+    Add_CMS_Header(plt, ax, upperRightText, text_xmin, addLumi, lumi, fontsize, unit, sqrts)
     plt.grid()
     plotText = "Sev = %s, time = %s"%(severity, time)
     addPlotText = 1 
@@ -277,12 +303,11 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
             transform=ax.transAxes
         )
 
-    #ol = "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta2p5prime_WithOddPF_MultiFitReco/"
     plt.xticks(fontsize = 20)
     plt.yticks(fontsize = 20)
     fig.tight_layout()
     for fileType in ["png", "pdf"]:
-        plt.savefig("{ol}/{variable_}_sev{severity}_{time}.{fileType}".format(ol=ol, variable_=variable_, severity=severity, time=time, fileType=fileType), dpi = 300)  #bbox_inches='tight', dpi = 300)
+        plt.savefig("{ol}/{variable_}_sev{severity}_{time}_{FGSelection}.{fileType}".format(ol=ol, variable_=variable_, severity=severity, time=time, FGSelection=FGSelection, fileType=fileType), dpi = 300)  #bbox_inches='tight', dpi = 300)
     plt.close()    
 
     # make average per bin plot as well 

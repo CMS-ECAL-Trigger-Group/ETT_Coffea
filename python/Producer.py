@@ -19,11 +19,12 @@ class HistProducer(ProcessorABC):
     histograms = NotImplemented
     selection = NotImplemented
 
-    def __init__(self, dim = "", do_syst=False, syst_var='', weight_syst=False, haddFileName=None, flag=False):
+    def __init__(self, dim = "", do_syst=False, syst_var='', severities=["all"], weight_syst=False, haddFileName=None, flag=False):
         self._flag = flag
         self.dim = int(dim)
         self.do_syst = do_syst
         self.syst_var, self.syst_suffix = (syst_var, f'_sys_{syst_var}') if do_syst and syst_var else ('', '')
+        self.severities = severities
         self.weight_syst = weight_syst
 
         # 1d histograms
@@ -48,7 +49,7 @@ class HistProducer(ProcessorABC):
         self.outfile = haddFileName
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(do_syst: {self.do_syst}, syst_var: {self.syst_var}, weight_syst: {self.weight_syst}, output: {self.outfile})'
+        return f'{self.__class__.__name__}(do_syst: {self.do_syst}, syst_var: {self.syst_var}, severities : {self.severities}, weight_syst: {self.weight_syst}, output: {self.outfile})'
 
     @property
     def accumulator(self):
@@ -139,9 +140,7 @@ class ETT_NTuple(HistProducer):
         "four" : "4"
     }
 
-    # severities = ["all", "zero", "three", "four"]
-    # severities = ["zero"]
-    severities = ["all"]
+    severities = ["all", "zero", "three", "four"]
     times = ["all"]
     # times = ["all", "inTime", "Early", "Late", "VeryLate"]
     FGSelections = ["all", "Tagged"] # all: all TPs. Tagged: FGbit=1
@@ -272,7 +271,7 @@ class ETT_NTuple(HistProducer):
             'axes' : {
                 'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
                 'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256} # Full ET range           
-                # 'yaxis': {'label': 'twrADC', 'n_or_arr': 35, 'lo': 0, 'hi 35} # Low ET range                 
+                # 'yaxis': {'label': 'twrADC', 'n_or_arr': 35, 'lo': 0, 'hi' : 35} # Low ET range                 
             }
 
         },  
@@ -331,24 +330,19 @@ class ETT_NTuple(HistProducer):
 
         # },          
 
-
-        
-
-        # 'realVsEmu': {
-        #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
-        #     'target_x' : 'twrEmul3ADC',
-        #     'target_y' : 'twrADC',
-        #     'name': 'realVsEmu', 
-        #     # 'region': ["clean"],
-        #     'region' : SelectionsToRun,
-        #     'axes' : {
-        #         'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
-        #         'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
-        #         # 'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256},
-        #         # 'yaxis': {'label': 'twrADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256}                
-        #     }
-# 
-        # },  
+        'realVsEmu': {
+            # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
+            'target_x' : 'twrEmul3ADC',
+            'target_y' : 'twrADC',
+            'name': 'realVsEmu', 
+            'region' : SelectionsToRun,
+            'axes' : {
+                'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
+                'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+                # 'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256},
+                # 'yaxis': {'label': 'twrADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256}                
+            }
+        },  
 
     }
 
@@ -360,8 +354,8 @@ class ETT_NTuple(HistProducer):
         "VeryLate" : ["event.time >= 10"]
     }
 
-    # severities = ["all", "zero", "three", "four"]
-    severities = ["all"]
+    severities = ["all", "zero", "three", "four"]
+    # severities = ["all"]
 
     sevDict = {
         "all" : "all",

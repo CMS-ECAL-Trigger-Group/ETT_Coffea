@@ -6,8 +6,8 @@ The purpose of this module is to submit condor jobs to run the ETT coffea produc
 Example commands:
 
 # 2022 900 GeV collisions data analysis:
+python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EnergyVsTimeOccupancy,realVsEmu  --tag=220615_220151 -s
 python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EnergyVsTimeOccupancy  --tag=FewFiles -s
-python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EnergyVsTimeOccupancy  --tag=220615_220151 -s
 python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EnergyVsTimeOccupancy  --tag=oneFile -s
 
 Misc:
@@ -88,9 +88,7 @@ def main():
 
     # times = ["all", "inTime", "Early", "Late", "VeryLate"]
     times = ["all"]
-    # severities = ["all", "zero", "three", "four"]
-    severities = ["all"]
-    # severities = ["zero"]
+    severities = ["all", "zero", "three", "four"]
     FGSelections = ["all", "Tagged"] # all: all TPs. Tagged: FGbit=1
 
     indir = "{}/{}/".format(options.direc, options.tag)
