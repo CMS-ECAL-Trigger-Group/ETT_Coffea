@@ -41,13 +41,44 @@ ls -lR .
 echo "+ PYTHON_PATH = $PYTHON_PATH"
 echo "+ PWD         = $PWD"
 
-echo "Running producer..."
-echo '$ python RunProducer.py --jobNum=$1 --infile=$2 --treename="tuplizer/ETTAnalyzerTree" '
+#echo "Copying input file $2 from EOS..."
+#echo "$ xrdcp root://eoscms.cern.ch/$2 Input_ETTAnalyzer_File.root"
+#xrdcp root://eoscms.cern.ch/$2 Input_ETTAnalyzer_File.root 
+
+#echo "Running producer..."
+#echo '$ python RunProducer.py --jobNum=$1 --infile=Input_ETTAnalyzer_File.root --treename="tuplizer/ETTAnalyzerTree" '
+#python RunProducer.py --jobNum=$1 --infile=Input_ETTAnalyzer_File.root --treename="tuplizer/ETTAnalyzerTree" 
+
 python RunProducer.py --jobNum=$1 --infile=$2 --treename="tuplizer/ETTAnalyzerTree" 
 
 echo "Directory after running producer..."
 echo "$ ls -lR ."
 ls -lR .
+
+# echo "Copying output file(s) to EOS..."
+# PATHS="$3"
+# arrIN=(${PATHS//;/ })
+
+# for i in "${arrIN[@]}"
+# do
+#    : 
+#    IFS='=' read outputFile outputEOSLocation <<< "$i"
+
+#    #pathArray=(${outputEOSLocation//// })
+#    #outFileName=${pathArray[-1]}
+#    #echo "$ mv $outputFile $outFileName"
+#    #mv $outputFile $outFileName
+
+#    # DirecOutput=`dirname root://eoscms.cern.ch/$outputEOSLocation`
+    
+#    echo "$ xrdcp $outputFile root://eoscms.cern.ch/$outputEOSLocation"
+#    xrdcp $outputFile root://eoscms.cern.ch/$outputEOSLocation
+
+# done
+
+# echo "Directory after copying files to EOS..."
+# echo "$ ls -lR ."
+# ls -lR .
 
 echo " ------ DONE ----- "
 """
@@ -56,7 +87,7 @@ condor_TEMPLATE = """
 request_disk          = 2048
 request_memory = 8000
 executable            = {jobdir}/script.sh
-arguments             = $(ProcId) $(jobid)
+arguments             = $(ProcId) $(jobid) {transfer_output_remaps}
 transfer_input_files = {transfer_files}, $(jobid)
 transfer_output_remaps="{transfer_output_remaps}"
 
