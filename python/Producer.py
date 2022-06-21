@@ -141,8 +141,8 @@ class ETT_NTuple(HistProducer):
     }
 
     severities = ["all", "zero", "three", "four"]
-    times = ["all"]
-    # times = ["all", "inTime", "Early", "Late", "VeryLate"]
+    times = ["all", "inTime", "Early", "Late", "VeryLate"]
+    # times = ["all"]
     FGSelections = ["all", "Tagged"] # all: all TPs. Tagged: FGbit=1
 
     for severity in severities:
@@ -261,20 +261,20 @@ class ETT_NTuple(HistProducer):
         # Useful for exploring the data
         # """
 
-        'EnergyVsTimeOccupancy': {
-            # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
-            'target_x' : 'time',
-            'target_y' : 'twrADC',
-            'name': 'EnergyVsTimeOccupancy', 
-            # 'region' : ['clean_all', 'clean_tagged'],
-            'region' : SelectionsToRun,
-            'axes' : {
-                'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
-                'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256} # Full ET range           
-                # 'yaxis': {'label': 'twrADC', 'n_or_arr': 35, 'lo': 0, 'hi' : 35} # Low ET range                 
-            }
+        # 'EnergyVsTimeOccupancy': {
+        #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
+        #     'target_x' : 'time',
+        #     'target_y' : 'twrADC',
+        #     'name': 'EnergyVsTimeOccupancy', 
+        #     # 'region' : ['clean_all', 'clean_tagged'],
+        #     'region' : SelectionsToRun,
+        #     'axes' : {
+        #         'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
+        #         'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256} # Full ET range           
+        #         # 'yaxis': {'label': 'twrADC', 'n_or_arr': 35, 'lo': 0, 'hi' : 35} # Low ET range                 
+        #     }
 
-        },  
+        # },  
 
         # """
         # Useful for evaluating effect of emulation, e.g. double weights, on digis
@@ -355,7 +355,6 @@ class ETT_NTuple(HistProducer):
     }
 
     severities = ["all", "zero", "three", "four"]
-    # severities = ["all"]
 
     sevDict = {
         "all" : "all",
@@ -363,9 +362,8 @@ class ETT_NTuple(HistProducer):
         "three" : "3",
         "four" : "4"
     }
-    # times = ["all", "inTime", "Early", "Late", "VeryLate"]
-    times = ["all"]
-
+    times = ["all", "inTime", "Early", "Late", "VeryLate"]
+    # times = ["all"]
     FGSelections = ["all", "Tagged"] # all: all TPs. Tagged: FGbit=1
 
     # Define selections based on event values 

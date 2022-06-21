@@ -1,6 +1,4 @@
 """
-18 November 2021 
-
 The purpose of this module is to submit condor jobs to run the ETT coffea producer. 
 
 Example commands:
@@ -9,6 +7,9 @@ Example commands:
 python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EnergyVsTimeOccupancy,realVsEmu  --tag=220615_220151 -s
 python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EnergyVsTimeOccupancy  --tag=FewFiles -s
 python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EnergyVsTimeOccupancy  --tag=oneFile -s
+
+# 2021 900 GeV collisions:
+python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights_ReemulateFromGlobalTag/" --vars EnergyVsTimeOccupancy,realVsEmu  --tag=220621_091715 -s
 
 Misc:
 Thank you: https://research.cs.wisc.edu/htcondor/manual/v8.5/condor_submit.html
@@ -35,8 +36,8 @@ echo
 echo "Changing to condor scratch directory: $_CONDOR_SCRATCH_DIR"
 cd   $_CONDOR_SCRATCH_DIR
 echo
-echo "... start job at" `date "+%Y-%m-%d %H:%M:%S"`
-echo "----- directory before running:"
+echo "starting job at" `date "+%Y-%m-%d %H:%M:%S"`
+echo "------ directory before running: ------"
 ls -lR .
 echo "+ PYTHON_PATH = $PYTHON_PATH"
 echo "+ PWD         = $PWD"
@@ -49,7 +50,7 @@ echo "Directory after running producer..."
 echo "$ ls -lR ."
 ls -lR .
 
-echo " ------ DONE ----- "
+echo " ------ DONE ------ "
 """
 
 condor_TEMPLATE = """
@@ -86,8 +87,8 @@ def main():
     options = parser.parse_args()
     vars = options.vars.split(',')
 
-    # times = ["all", "inTime", "Early", "Late", "VeryLate"]
-    times = ["all"]
+    times = ["all", "inTime", "Early", "Late", "VeryLate"]
+    # times = ["all"]
     severities = ["all", "zero", "three", "four"]
     FGSelections = ["all", "Tagged"] # all: all TPs. Tagged: FGbit=1
 
@@ -150,7 +151,7 @@ def main():
                     for time in times:
                         for FGSel in FGSelections: 
                             transfer_file = "{var}_sev{sev}_{time}_{FGSel}_values.p={output_dir}/{var}/{sev}/{time}/{var}_sev{sev}_{time}_{FGSel}_values_$(ProcId).p".format(var=var, sev=sev, time=time, output_dir = outdir, FGSel=FGSel)
-                            transfer_file = transfer_file.replace("/eos/", "root://eoscms.cern.ch//eos/")
+                            transfer_file = transfer_file.replace("/eos/", "root://eoscms.cern.ch//eos/") 
                             transfer_files.append(transfer_file)
 
             transfer_output_remaps = str(";".join(transfer_files))

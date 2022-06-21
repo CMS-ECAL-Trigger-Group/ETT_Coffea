@@ -115,14 +115,17 @@ def SetYMax(Values_array_, ymax_, binWidth_, ybins):
 
     return [Transformed_List, ybins]
 
-def SetXMax(Values_array_, xmax_, binWidth_): # as you loop the Values_array, each object is a y slice starting from the left 
+def SetXMax(Values_array_, xmax_, binWidth_, xbins): # as you loop the Values_array, each object is a y slice starting from the left 
     Transformed_List = [] 
     xmax_bin_i = xmax_ # for [0, 256] with 1 spaced binnings 
     for i, xBinVals in enumerate(Values_array_):
-        if(i > xmax_bin_i): continue 
+        if(i >= xmax_bin_i): continue 
         else: Transformed_List.append(xBinVals)        
     Transformed_List = np.array(Transformed_List)
-    return Transformed_List    
+
+    xbins = np.linspace(0, int(xmax_), int(xmax_)+1) # assumes starting at zero and binwidth of 1 
+
+    return [Transformed_List, xbins] 
 
 def GetBins(varLabel_, dataset_):
 
@@ -174,11 +177,11 @@ def GetBins(varLabel_, dataset_):
 
 def GetPlotLabels(varLabel_):
     labelDict = {
-        "realVsEmu" : ["Emulated TP Et (ADC)", "Real data TP Et (ADC)"],
-        "EnergyVsTimeOccupancy" : ["time (ns)", "Real data TP Et (ADC)"],
-        "EnergyVsTimeOccupancy_ratio" : ["time (ns)", "Real data TP Et (ADC)"],
-        "oneMinusEmuOverRealvstwrADCCourseBinning" : ["Real data TP Et (ADC)", "1 - (emu / real)"],
-        "oneMinusEmuOverRealvstwrADCCourseBinningZoomed" : ["Readl data TP Et (ADC)", "1 - (emu / real)"]
+        "realVsEmu" : ["Emulated TP Et (ADC)", r"Real data TP $E_{T}$ (ADC)"],
+        "EnergyVsTimeOccupancy" : ["time (ns)", r"Real data TP $E_{T}$ (ADC)"],
+        "EnergyVsTimeOccupancy_ratio" : ["time (ns)", r"Real data TP $E_{T}$ (ADC)"],
+        "oneMinusEmuOverRealvstwrADCCourseBinning" : [r"Real data TP $E_{T}$ (ADC)", "1 - (emu / real)"],
+        "oneMinusEmuOverRealvstwrADCCourseBinningZoomed" : [r"Real data TP $E_{T}$ (ADC)", "1 - (emu / real)"]
 
     }
 
@@ -215,6 +218,8 @@ def ComputeAverages(xbins_, Values_array_):
 def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dataset, lumi, unit, sqrts, FGSelection):
     print("Making plot")  
 
+    normalize = 0 
+
     # Prepare figure and axes 
     fig, ax = plt.subplots()
     fig.set_dpi(100)
@@ -223,9 +228,17 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
     cmap.set_under(color='white')     
     xbins, ybins = GetBins(variable_, dataset)
 
-    ymax = 35
-    binWidth = 1 
-    Values_array, ybins = SetYMax(Values_array, ymax, binWidth, ybins)      
+    if(variable_ == "EnergyVsTimeOccupancy"):
+        ymax = 35
+        binWidth = 1 
+        Values_array, ybins = SetYMax(Values_array, ymax, binWidth, ybins)      
+
+    elif(variable_ == "realVsEmu"):
+        xmax = 35
+        ymax = 35
+        binWidth = 1 
+        Values_array, ybins = SetYMax(Values_array, ymax, binWidth, ybins)             
+        Values_array, xbins = SetXMax(Values_array, xmax, binWidth, xbins)             
 
     # plot with colormesh 
     # if(isRatio): 
@@ -237,10 +250,10 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
     # else: 
         # norm = None     
 
-    if(variable_ == "EnergyVsTimeOccupancy"):
-        normalize = 0
-    else:
-        normalize = 0 
+    # if(variable_ == "EnergyVsTimeOccupancy"):
+    #     normalize = 0
+    # else:
+    #     normalize = 0 
 
     if(normalize):
         maxVal = np.max(Values_array)
@@ -270,10 +283,7 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
                         ybins, 
                         Values_array.transpose(1,0), 
                         cmap = cmap, 
-                        # vmin = vmin,
                         norm = norm,
-                        #vmax = vmax,
-                        # norm = norm
                         )
     cb = fig.colorbar(pos, 
                     ax=ax,
@@ -288,20 +298,40 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
     addLumi = 1
     # fontsize = 22.5
     fontsize = 18
-    text_xmin = 0.12
+    text_xmin = 0.14
     Add_CMS_Header(plt, ax, upperRightText, text_xmin, addLumi, lumi, fontsize, unit, sqrts)
     plt.grid()
-    plotText = "Sev = %s, time = %s"%(severity, time)
     addPlotText = 1 
 
+    FGSelectionDict = {
+        "all" : "",
+        "Tagged" : "Tagged",
+        "ratio" : "Tagged/Total"
+    }
+
     if(addPlotText):
+        FGLabel = FGSelectionDict[FGSelection]
+        # Upper left text info 
         plt.text(
-            0.1, 0.75, plotText,
-            fontsize=30, fontweight='bold',
+            0.05, 0.975, u"\n".join([
+                "Severity: %s"%(severity),
+                "Timing: %s"%(time),
+                FGLabel
+            ]),
+            fontsize=fontsize, fontweight='bold',
             horizontalalignment='left',
-            verticalalignment='bottom',
+            verticalalignment='top',
             transform=ax.transAxes
         )
+
+        # Upper right text info 
+        plt.text(
+            0.975, 0.95, "Full Readout",
+            fontsize=fontsize, fontweight='bold',
+            horizontalalignment='right', 
+            verticalalignment='top', 
+            transform=ax.transAxes
+        )   
 
     plt.xticks(fontsize = 20)
     plt.yticks(fontsize = 20)
@@ -357,7 +387,7 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
             plt.scatter(x = centered_energy_bins, y = averages, label = "Severity = %s, %s"%(severity, time), s = 10)
             plt.plot(x = centered_energy_bins, y = averages, label = "__nolegend__", linestyle = '-')
 
-        plt.xlabel("Real data TP Et (ADC)", fontsize=15)
+        plt.xlabel(r"Real data TP $E_{T}$ (ADC)", fontsize=15)
         plt.ylabel("Average 1 - (Emulated / Real)", fontsize=15)    
         plt.legend(loc = 'best', fontsize = 15)
         plt.ylim(0, 1.01)
