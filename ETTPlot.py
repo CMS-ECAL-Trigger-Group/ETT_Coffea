@@ -12,7 +12,7 @@ conda activate higgs-dna # to create parquet files
 python3 ETTPlot.py --dataset PilotBeam2021 --variables EnergyVsTimeOccupancy --maxFiles 1412 --times all --severities all,zero,three,four --plotIndividuals
 
 # 2022 Collisions 
-python3 ETTPlot.py --dataset Run352912 --variables EnergyVsTimeOccupanzy,realVsEmu --maxFiles 3077 --times all,Early,inTime,Late,VeryLate --severities all,zero,three,four --plotIndividuals
+python3 ETTPlot.py --dataset Run352912 --variables EnergyVsTimeOccupancy,realVsEmu --maxFiles 3077 --times all,Early,inTime,Late,VeryLate --severities all,zero,three,four --plotIndividuals
 
 # Full readout data from 2017/2018 
 python3 ETTPlot.py --dataset FullReadoutData_2018 --variables oneMinusEmuOverRealvstwrADCCourseBinningZoomed  --maxFiles 1000000  --plotTogether --fromParquet --times inTime --severities zero
@@ -183,9 +183,9 @@ if(__name__ == '__main__'):
                         if(time == "inTime" and severity == "three"):
                             print("Skipping in time severity three as they shouldn't exist by definition")
                             continue 
-                        if((variable == "EnergyVsTimeOccupancy") and (time != "all")):
-                            print("Already plotted EnergyVsTimeOccupancy for all times for given severity")
-                            continue      
+                        # if((variable == "EnergyVsTimeOccupancy") and (time != "all")):
+                        #     print("Already plotted EnergyVsTimeOccupancy for all times for given severity")
+                        #     continue      
                         for FGSelection in ["all", "Tagged"]:
                             print("FGSelection:",FGSelection)
                             print("On Var: %s, Sev: %s, time: %s"%(variable, severity, time))
@@ -211,6 +211,7 @@ if(__name__ == '__main__'):
                             os.system("cp %s/../index.php %s"%(direc_ol, direc_ol))
                             upperRightText, lumi, unit, sqrts = upperRightTextDict[dataset]
                             averages, stdevs = MakeETTPlot(These_Values, variable, severity, time, direc_ol, upperRightText, dataset, lumi, unit, sqrts, FGSelection) # make plots and return averages 
+                            print("averages:",averages)
 
                             exec("%s_Values = np.copy(These_Values)"%(FGSelection))                                
 
@@ -238,6 +239,108 @@ if(__name__ == '__main__'):
                         fraction = np.divide(Tagged_Values, all_Values, out=np.zeros_like(Tagged_Values), where=all_Values!=0)
                         averages, stdevs = MakeETTPlot(fraction, variable, severity, time, direc_ol, upperRightText, dataset, lumi, unit, sqrts, "ratio") # make plots and return averages 
 
+                        # If variable is energy vs time, compute Tagging probability vs. ET 
+                        if(variable == "EnergyVsTimeOccupancy"):
+                            # Compute ratio of tagged / all per ET bin (integrate over times)
+                            # integrate over time 
+                            Total_Tagged_PerEnergyBin = np.sum(Tagged_Values, axis=0)
+                            Total_PerEnergyBin = np.sum(all_Values, axis=0)
+
+                            NOENTRIESMASK = tuple([Total_PerEnergyBin != 0])
+                            TaggingProbPerEnergyBin = np.divide(Total_Tagged_PerEnergyBin, Total_PerEnergyBin, out=np.zeros_like(Total_Tagged_PerEnergyBin), where=Total_PerEnergyBin!=0)
+                            # TaggingProbPerEnergyBin[NOENTRIESMASK] = -1 # If there are no TPs, set tagging probability to -1
+
+                            # compute statistical uncertainty
+                            TaggingProbPerEnergyBin_STATUNC = [] 
+
+                            for i, avg_val in enumerate(TaggingProbPerEnergyBin):
+                                if(avg_val == -1):
+                                    TaggingProbPerEnergyBin_STATUNC.append(0)
+                                else:
+                                    NTagged = Total_Tagged_PerEnergyBin[i]
+                                    NTotal = Total_PerEnergyBin[i]
+
+                                    if(NTagged == 0):
+                                        NTagged_unc = 0
+                                    else:
+                                        NTagged_unc = 1/NTagged
+
+                                    if(NTotal == 0):
+                                        NTotal_unc = 0
+                                    else:
+                                        NTotal_unc = 1/NTotal                                        
+
+                                    rel_error = np.sqrt(NTagged_unc + NTotal_unc)
+                                    abs_error = avg_val * float(rel_error)
+                                    TaggingProbPerEnergyBin_STATUNC.append(abs_error)
+                            
+                            TaggingProbPerEnergyBin_STATUNC = np.array(TaggingProbPerEnergyBin_STATUNC)
+                            
+                            # plot 
+
+                            # Prepare figure and axes 
+                            fig, ax = plt.subplots()
+                            fig.set_dpi(100)
+                            fig.set_size_inches(10, 7.5)
+
+                            xbins, ybins = GetBins(variable, dataset)
+                            energy_bins = ybins
+
+                            centered_energy_bins_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) + energy_bins[i] for i in range(len(energy_bins) - 1) ]
+                            xerrors_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) for i in range(len(energy_bins) - 1) ]  
+                            centered_energy_bins = np.array(centered_energy_bins_)
+                            xerrors = np.array(xerrors_)
+
+                            # yVals_before_mask = np.copy(TaggingProbPerEnergyBin)
+                            # yUnc_before_mask = np.copy(TaggingProbPerEnergyBin_STATUNC)
+                            # MASK = tuple([averages != -1])
+                            centered_energy_bins = centered_energy_bins[NOENTRIESMASK]
+                            yVals = TaggingProbPerEnergyBin[NOENTRIESMASK]
+                            yUnc = TaggingProbPerEnergyBin_STATUNC[NOENTRIESMASK]  
+                            xerrors = xerrors[NOENTRIESMASK]
+
+                            zero_errors = [0. for i in range(0, len(yVals))]
+                            error = 1
+                            log = 0
+                            xmin_, xmax_ = ybins[0], ybins[-1]
+
+                            if(error):
+                                plt.scatter(x = centered_energy_bins, y = yVals, label = "Severity = %s, %s"%(severity, time), s = 15)
+                                # plt.errorbar(x = centered_energy_bins, y = averages, xerr = xerrors, yerr = zero_errors, fmt = " ")            
+                                plt.errorbar(x = centered_energy_bins, y = yVals, xerr = zero_errors, yerr = yUnc, fmt = " ") 
+                                # plt.errorbar(x = centered_energy_bins, y = yVals, xerr = zero_errors, yerr = zero_errors, fmt = " ") 
+                            else:
+                                plt.scatter(x = centered_energy_bins, y = yVals, label = "Severity = %s, %s"%(severity, time), s = 10)
+                                plt.plot(x = centered_energy_bins, y = yVals, label = "__nolegend__", linestyle = '-')
+
+                            yLabelDict = {
+                                "oneMinusEmuOverRealvstwrADCCourseBinning" : "Average 1 - (Emulated / Real)",
+                                "oneMinusEmuOverRealvstwrADCCourseBinningZoomed": "Average 1 - (Emulated / Real)",
+                                "EnergyVsTimeOccupancy" : "Tagging probability"
+                            }
+
+                            yLabel = yLabelDict[variable]
+
+                            plt.xlabel(r"Real data TP $E_{T}$ (ADC)", fontsize=15)
+                            plt.ylabel(yLabel, fontsize=15)    
+                            plt.legend(loc = 'best', fontsize = 15)
+                            plt.ylim(0, 1.01)
+                            plt.xlim(xmin_, xmax_)
+                            plt.grid()
+                            if(log):
+                                plt.ylim(0.0001, 1)
+                                plt.yscale('log')  
+
+                            outLocation = "%s/Sev_%s_TaggingProbability_%s-times.png"%(direc_ol, severity, time)
+
+                            print("Out location:",outLocation)
+
+                            plt.savefig("%s/Sev_%s_TaggingProbability_%s-times.png"%(direc_ol, severity, time), dpi = 100)
+                            plt.savefig("%s/Sev_%s_TaggingProbability_%s-times.pdf"%(direc_ol, severity, time), dpi = 300)        
+                            plt.close()                     
+
+                            # save values as parquet files to eventually plot together with other datasets / working points    
+                                
         if(plotTogether):
 
             colorDict = {
@@ -336,11 +439,21 @@ if(__name__ == '__main__'):
                                 val = labelReplaceDict[key]
                                 plotLabel = plotLabel.replace(key, val)
                             if(error):
+                                plt.scatter(x = centered_energy_bins, y = averages, label = plotLabel, s = 15) ### [:-7] = remove the final 7 points (hack)
+                                plt.errorbar(x = centered_energy_bins, y = averages, xerr = xerrors, yerr = zero_errors, fmt = " ")  
+                            else:
+                                plt.scatter(x = centered_energy_bins, y = averages, label = plotLabel, s = 15)
+                                plt.plot(centered_energy_bins, averages, label = "__nolegend__", linestyle = '-')   
+
+                            # with removal of final 7 points:
+                            """
+                            if(error):
                                 plt.scatter(x = centered_energy_bins[:-7], y = averages[:-7], label = plotLabel, s = 15) ### [:-7] = remove the final 7 points (hack)
                                 plt.errorbar(x = centered_energy_bins[:-7], y = averages[:-7], xerr = xerrors[:-7], yerr = zero_errors[:-7], fmt = " ")  
                             else:
                                 plt.scatter(x = centered_energy_bins[:-7], y = averages[:-7], label = plotLabel, s = 15)
                                 plt.plot(centered_energy_bins[:-7], averages[:-7], label = "__nolegend__", linestyle = '-')
+                            """
 
                         # plt.legend(loc = 'best', fontsize = 10)
 
@@ -378,8 +491,6 @@ if(__name__ == '__main__'):
                         fontsize = 16
                         text_xmin = 0.15                               
 
-
-                                        
                         Add_CMS_Header(plt, ax, upperRightText, text_xmin, addLumi, lumi, fontsize)
                         plt.text(
                             EB_LABEL_XMIN, 0.85, u"ECAL Barrel",
@@ -396,8 +507,6 @@ if(__name__ == '__main__'):
                             verticalalignment='bottom',
                             transform=ax.transAxes
                         )                           
-                                                                     
-                     
                         
                         fig.tight_layout()
                         plt.savefig("%s/Sev_%s_%s_Average_%s_linear.png"%(ol, severity, time, varLabel), dpi = 300)

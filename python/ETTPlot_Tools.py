@@ -187,14 +187,38 @@ def GetPlotLabels(varLabel_):
 
     return labelDict[varLabel_]     
 
+# def ComputeXSliceAverages(ybins_, Values_array_):
+#     print("Computing x slice averages")
+
+#     averages = []
+#     stdevs = [] 
+
+#     ybinVals = range(0, 1200, 25) # assuming y range 0 to 1.2 with 0.025 bin distance. Imagine passing these parameters as variables that could be specified every time the function is called. 
+#     ybinVals = [val/1000. for val in ybinVals] ##-- y bins (1 - emu/real)
+
+#     ##-- x bins 
+#     for bin_i, binmin in enumerate(ybins_[:-1]):
+#         h_slice_vals = Values_array_[bin_i]
+#         if(np.sum(h_slice_vals) == 0):
+#             average = -1 
+#             stdev = -1 
+#         else:
+#             average = np.average(ybinVals, weights=h_slice_vals)
+#             variance = np.average((ybinVals-average)**2, weights=h_slice_vals)
+#             stdev = np.sqrt(variance)
+#         averages.append(average)
+#         stdevs.append(stdev)
+
+#     averages = np.array(averages)
+#     stdevs = np.array(stdevs)
+    
+#     return averages, stdevs 
+
 # Compute averages values per bin
-def ComputeAverages(xbins_, Values_array_):
-    # make average per bin plot as well 
+def ComputeAverages(xbins_, Values_array_, ybinVals):
+    # compute average per bin
     averages = []
     stdevs = [] 
-
-    ybinVals = range(0, 1200, 25)
-    ybinVals = [val/1000. for val in ybinVals] ##-- y bins (1 - emu/real)
 
     ##-- x bins 
     for bin_i, binmin in enumerate(xbins_[:-1]):
@@ -204,6 +228,10 @@ def ComputeAverages(xbins_, Values_array_):
             average = -1 
             stdev = -1 
         else:
+            print("ybinVals:",ybinVals)
+            print("h_slice_vals:",h_slice_vals)
+            print("len(ybinVals):",len(ybinVals))
+            print("len(h_slice_vals):",len(h_slice_vals))
             average = np.average(ybinVals, weights=h_slice_vals)
             variance = np.average((ybinVals-average)**2, weights=h_slice_vals)
             stdev = np.sqrt(variance)
@@ -222,7 +250,6 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
 
     # Prepare figure and axes 
     fig, ax = plt.subplots()
-    fig.set_dpi(100)
     fig.set_size_inches(10, 7.5)
     cmap = copy.copy(matplotlib.cm.get_cmap("jet"))
     cmap.set_under(color='white')     
@@ -309,6 +336,8 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
         "ratio" : "Tagged/Total"
     }
 
+    fig.tight_layout()
+
     if(addPlotText):
         FGLabel = FGSelectionDict[FGSelection]
         # Upper left text info 
@@ -335,9 +364,10 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
 
     plt.xticks(fontsize = 20)
     plt.yticks(fontsize = 20)
-    fig.tight_layout()
-    for fileType in ["png", "pdf"]:
-        plt.savefig("{ol}/{variable_}_sev{severity}_{time}_{FGSelection}.{fileType}".format(ol=ol, variable_=variable_, severity=severity, time=time, FGSelection=FGSelection, fileType=fileType), dpi = 300)  #bbox_inches='tight', dpi = 300)
+    dpis = [50, 300]
+    for f_i, fileType in enumerate(["png", "pdf"]):
+        dpi = dpis[f_i]
+        plt.savefig("{ol}/{variable_}_sev{severity}_{time}_{FGSelection}.{fileType}".format(ol=ol, variable_=variable_, severity=severity, time=time, FGSelection=FGSelection, fileType=fileType), dpi = dpi)
     plt.close()    
 
     # make average per bin plot as well 
@@ -347,15 +377,29 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
     ybinVals = range(0, 1200, 25)
     ybinVals = [val/1000. for val in ybinVals] ##-- y bins (1 - emu/real)
 
-    if( (variable_ == "oneMinusEmuOverRealvstwrADCCourseBinning") or (variable_ == "oneMinusEmuOverRealvstwrADCCourseBinningZoomed")):
-        averages, stdevs = ComputeAverages(xbins, Values_array)
+    # averageComputingVars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "oneMinusEmuOverRealvstwrADCCourseBinningZoomed", "EnergyVsTimeOccupancy"]
+    averageComputingVars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "oneMinusEmuOverRealvstwrADCCourseBinningZoomed"]
+
+    if(variable_ in averageComputingVars):
+        if( (variable_ == "oneMinusEmuOverRealvstwrADCCourseBinning") or (variable_ == "oneMinusEmuOverRealvstwrADCCourseBinningZoomed")): 
+            ybinVals = range(0, 1200, 25) # assuming y range 0 to 1.2 with 0.025 bin distance. Imagine passing these parameters as variables that could be specified every time the function is called. 
+            ybinVals = [val/1000. for val in ybinVals] ##-- y bins (1 - emu/real)            
+            averages, stdevs = ComputeAverages(xbins, Values_array, ybinVals)
+            energy_bins = xbins 
+        elif(variable_ == "EnergyVsTimeOccupancy"): 
+            # ybinVals = range(0, 1200, 25) # assuming y range 0 to 1.2 with 0.025 bin distance. Imagine passing these parameters as variables that could be specified every time the function is called. 
+            # ybinVals = [val/1000. for val in ybinVals] ##-- y bins (1 - emu/real)         
+            # ybinVals = range(0, 36, 1)
+            ybinVals = range(0, 36, 1) # times 
+            ybinVals = [val/1. for val in ybinVals] 
+            averages, stdevs = ComputeAverages(ybins, Values_array.transpose(1,0), ybinVals, ) # transpose to flip axes. 
+            energy_bins = ybins 
 
         # Prepare figure and axes 
         fig, ax = plt.subplots()
         fig.set_dpi(100)
         fig.set_size_inches(10, 7.5)
 
-        energy_bins = xbins
         centered_energy_bins_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) + energy_bins[i] for i in range(len(energy_bins) - 1) ]
         xerrors_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) for i in range(len(energy_bins) - 1) ]  
         centered_energy_bins = np.array(centered_energy_bins_)
@@ -387,8 +431,16 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
             plt.scatter(x = centered_energy_bins, y = averages, label = "Severity = %s, %s"%(severity, time), s = 10)
             plt.plot(x = centered_energy_bins, y = averages, label = "__nolegend__", linestyle = '-')
 
+        yLabelDict = {
+            "oneMinusEmuOverRealvstwrADCCourseBinning" : "Average 1 - (Emulated / Real)",
+            "oneMinusEmuOverRealvstwrADCCourseBinningZoomed": "Average 1 - (Emulated / Real)",
+            "EnergyVsTimeOccupancy" : "Average time"
+        }
+
+        yLabel = yLabelDict[variable_]
+
         plt.xlabel(r"Real data TP $E_{T}$ (ADC)", fontsize=15)
-        plt.ylabel("Average 1 - (Emulated / Real)", fontsize=15)    
+        plt.ylabel(yLabel, fontsize=15)    
         plt.legend(loc = 'best', fontsize = 15)
         plt.ylim(0, 1.01)
         plt.xlim(xmin_, xmax_)
@@ -396,8 +448,8 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
         if(log):
             plt.ylim(0.0001, 1)
             plt.yscale('log')    
-        plt.savefig("%s/Sev_%s_Average_%s_%s.png"%(ol, severity, variable_, time), dpi = 100)
-        plt.savefig("%s/Sev_%s_Average_%s_%s.pdf"%(ol, severity, variable_, time), dpi = 100)        
+        plt.savefig("%s/Sev_%s_Average_%s_%s.png"%(ol, severity, variable_, time), dpi = 50)
+        plt.savefig("%s/Sev_%s_Average_%s_%s.pdf"%(ol, severity, variable_, time), dpi = 300)        
         plt.close()
 
         return averages_before_mask, stdevs_before_mask 

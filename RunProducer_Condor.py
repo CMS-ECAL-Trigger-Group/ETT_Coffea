@@ -87,7 +87,7 @@ def main():
     options = parser.parse_args()
     vars = options.vars.split(',')
 
-    times = ["all", "inTime", "Early", "Late", "VeryLate"]
+    times = ["inTime", "Early", "Late", "VeryLate"]
     # times = ["all"]
     severities = ["all", "zero", "three", "four"]
     FGSelections = ["all", "Tagged"] # all: all TPs. Tagged: FGbit=1
