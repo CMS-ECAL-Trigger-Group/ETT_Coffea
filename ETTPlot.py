@@ -8,6 +8,14 @@ Example commands:
 
 conda activate higgs-dna # to create parquet files 
 
+# Comparison of 2021 and 2022 900 GeV collisions
+
+python3 ETTPlot.py --dataset 2021_2022_900GeVCollisions --variables EnergyVsTimeOccupancy --maxFiles 999999 --times all,Early,inTime,Late,VeryLate --severities all,zero,three,four --plotIndividuals
+python3 ETTPlot.py --dataset 2021_2022_900GeVCollisions --variables EnergyVsTimeOccupancy --maxFiles 999999 --times all,Early,inTime,Late,VeryLate --severities all,zero,three,four --plotTogether --fromParquet
+
+python3 ETTPlot.py --dataset 2021_2022_900GeVCollisions --variables EnergyVsTimeOccupancy --maxFiles 999999 --times all --severities zero,three,four --plotIndividuals
+python3 ETTPlot.py --dataset 2021_2022_900GeVCollisions --variables EnergyVsTimeOccupancy --maxFiles 100 --times all --severities zero  --plotTogether --fromParquet
+
 # 2021 Collisions
 python3 ETTPlot.py --dataset PilotBeam2021 --variables EnergyVsTimeOccupancy --maxFiles 1412 --times all --severities all,zero,three,four --plotIndividuals
 
@@ -139,9 +147,20 @@ elif(dataset == "Run352912"):
         "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/220615_220151/allFiles_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/2022Collisions/Run_352912/Reemul_by_globalTag/"
     }
 
+elif(dataset == "2021_2022_900GeVCollisions"):
+    directories = [
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/220615_220151/allFiles_output/",
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights_ReemulateFromGlobalTag/220621_091715/allFiles_output/"
+    ]
+
+    direc_ol_dict = {
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/220615_220151/allFiles_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/2022Collisions/Run_352912/Reemul_by_globalTag/",
+        "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights_ReemulateFromGlobalTag/220621_091715/allFiles_output/" : "/eos/user/a/atishelm/www/EcalL1Optimization/2021Collisions/Runs_346446_346447/Reemul_by_globalTag/"        
+    }    
+
 upperRightTextDict = {
-    "PilotBeam2021" : ["Runs 346446, 346447", "82", "{\mu}b", "900 GeV"], # label, lumi (fb-1)
-    "FullReadoutData_2018" : ["FR 2018", "0.014"], # label, lumi (fb-1)
+    "PilotBeam2021" : ["Runs 346446, 346447", "82", "{\mu}b", "900 GeV"], # label, lumi 
+    "FullReadoutData_2018" : ["FR 2018", "0.014"], # label, lumi 
     "Run352912" : ["Run 352912", "145", "{\mu}b", "900 GeV"]
 }
 
@@ -168,13 +187,20 @@ if(__name__ == '__main__'):
         if(plotIndividuals):
             for direc in directories:
                 print("direc:",direc)
-                if("Run_352912" in direc or "PilotBeam_2021" in direc): 
-                    print("Assuming certain reco methods because Run 352912")
-                    WP, PF, RECO = "MinDelta2p5prime", "WithOddPeakFinder", "Weights"
-                    # not varying working points 
+                if("Run_352912" in direc or "PilotBeam_2021" in direc): pass 
                 else: WP, PF, RECO = GetWorkingPointLabels(direc) # if varying working points 
 
                 direc_ol = direc_ol_dict[direc]
+
+                if("Run_352912" in direc):
+                    sub_dataset = "Run352912"
+                elif("Runs_346446_346447_PilotBeam_2021" in direc):
+                    sub_dataset = "PilotBeam2021"
+                else: sub_dataset = dataset 
+
+                # if(sub_dataset == "Run352912"): 
+                    # print("Skipping ",sub_dataset)
+                    # continue 
 
                 for severity in severities:
                     print("On severity:",severity)
@@ -183,9 +209,7 @@ if(__name__ == '__main__'):
                         if(time == "inTime" and severity == "three"):
                             print("Skipping in time severity three as they shouldn't exist by definition")
                             continue 
-                        # if((variable == "EnergyVsTimeOccupancy") and (time != "all")):
-                        #     print("Already plotted EnergyVsTimeOccupancy for all times for given severity")
-                        #     continue      
+
                         for FGSelection in ["all", "Tagged"]:
                             print("FGSelection:",FGSelection)
                             print("On Var: %s, Sev: %s, time: %s"%(variable, severity, time))
@@ -195,6 +219,14 @@ if(__name__ == '__main__'):
                             values_0 = pickle.load(open("%s/%s_sev%s_%s_%s_values_0.p"%(thisDirec, variable, severity, time, FGSelection), "rb")) # EnergyVsTimeOccupancy_sevall_all_all_values_3040.p
                             values_1 = pickle.load(open("%s/%s_sev%s_%s_%s_values_1.p"%(thisDirec, variable, severity, time, FGSelection), "rb"))
                             total_values = np.add(values_0, values_1)
+
+                            if(maxFiles == 999999):
+                                maxFilesDict = {
+                                    "Run352912" : 3077,
+                                    "PilotBeam2021" : 1412 
+                                }
+                                maxFiles = maxFilesDict[sub_dataset]
+
                             for i in range(n_files):
                                 if(i > maxFiles):
                                     print("Max files reached: ",i)
@@ -205,13 +237,15 @@ if(__name__ == '__main__'):
                                 exec('thisValues = pickle.load(open("%s/%s_sev%s_%s_%s_values_%s.p"%(thisDirec, variable, severity, time, FGSelection, i), "rb"))')  
                                 total_values = np.add(total_values, thisValues)
 
+                            maxFiles = args.maxFiles # reset maxFiles value 
+
                             exec("%s_%s_%s_values = np.copy(total_values)"%(variable, severity, time)) # copy with unique name to plot together on same plot later 
                             exec("These_Values = np.copy(total_values)") 
                             os.system("mkdir -p %s"%(direc_ol))
                             os.system("cp %s/../index.php %s"%(direc_ol, direc_ol))
-                            upperRightText, lumi, unit, sqrts = upperRightTextDict[dataset]
-                            averages, stdevs = MakeETTPlot(These_Values, variable, severity, time, direc_ol, upperRightText, dataset, lumi, unit, sqrts, FGSelection) # make plots and return averages 
-                            print("averages:",averages)
+
+                            upperRightText, lumi, unit, sqrts = upperRightTextDict[sub_dataset]
+                            averages, stdevs = MakeETTPlot(These_Values, variable, severity, time, direc_ol, upperRightText, sub_dataset, lumi, unit, sqrts, FGSelection) # make plots and return averages 
 
                             exec("%s_Values = np.copy(These_Values)"%(FGSelection))                                
 
@@ -220,7 +254,7 @@ if(__name__ == '__main__'):
 
                             if((variable == "oneMinusEmuOverRealvstwrADCCourseBinning") or (variable == "oneMinusEmuOverRealvstwrADCCourseBinningZoomed")):                                   
 
-                                parquetOutDir = "output/%s/%s_%s_%s_%s/"%(dataset, variable, WP, PF, RECO)
+                                parquetOutDir = "output/%s/%s_%s_%s_%s/"%(sub_dataset, variable, WP, PF, RECO)
                                 os.system("mkdir -p %s"%(parquetOutDir))
                                 outName_averages = "%s/%s_%s_%s_%s_%s_%s_averages.parquet"%(parquetOutDir, variable, WP, PF, RECO, severity, time)
                                 outName_stdevs = "%s/%s_%s_%s_%s_%s_%s_stdevs.parquet"%(parquetOutDir, variable, WP, PF, RECO, severity, time)
@@ -237,7 +271,7 @@ if(__name__ == '__main__'):
 
                         # Make ratio of tagged / all to see which region of phase space is tagged by double weights 
                         fraction = np.divide(Tagged_Values, all_Values, out=np.zeros_like(Tagged_Values), where=all_Values!=0)
-                        averages, stdevs = MakeETTPlot(fraction, variable, severity, time, direc_ol, upperRightText, dataset, lumi, unit, sqrts, "ratio") # make plots and return averages 
+                        averages, stdevs = MakeETTPlot(fraction, variable, severity, time, direc_ol, upperRightText, sub_dataset, lumi, unit, sqrts, "ratio") # make plots and return averages 
 
                         # If variable is energy vs time, compute Tagging probability vs. ET 
                         if(variable == "EnergyVsTimeOccupancy"):
@@ -277,23 +311,27 @@ if(__name__ == '__main__'):
                             TaggingProbPerEnergyBin_STATUNC = np.array(TaggingProbPerEnergyBin_STATUNC)
                             
                             # plot 
-
                             # Prepare figure and axes 
                             fig, ax = plt.subplots()
                             fig.set_dpi(100)
                             fig.set_size_inches(10, 7.5)
 
-                            xbins, ybins = GetBins(variable, dataset)
+                            xbins, ybins = GetBins(variable, sub_dataset)
                             energy_bins = ybins
+
+                            centerTheXbins = 0
+
+                            if(centerTheXbins): centered_energy_bins_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) + energy_bins[i] for i in range(len(energy_bins) - 1) ]
+                            else: centered_energy_bins_ = energy_bins
 
                             centered_energy_bins_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) + energy_bins[i] for i in range(len(energy_bins) - 1) ]
                             xerrors_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) for i in range(len(energy_bins) - 1) ]  
                             centered_energy_bins = np.array(centered_energy_bins_)
                             xerrors = np.array(xerrors_)
 
-                            # yVals_before_mask = np.copy(TaggingProbPerEnergyBin)
-                            # yUnc_before_mask = np.copy(TaggingProbPerEnergyBin_STATUNC)
-                            # MASK = tuple([averages != -1])
+                            yVals_before_mask = np.copy(TaggingProbPerEnergyBin)
+                            yUnc_before_mask = np.copy(TaggingProbPerEnergyBin_STATUNC)
+
                             centered_energy_bins = centered_energy_bins[NOENTRIESMASK]
                             yVals = TaggingProbPerEnergyBin[NOENTRIESMASK]
                             yUnc = TaggingProbPerEnergyBin_STATUNC[NOENTRIESMASK]  
@@ -306,8 +344,8 @@ if(__name__ == '__main__'):
 
                             if(error):
                                 plt.scatter(x = centered_energy_bins, y = yVals, label = "Severity = %s, %s"%(severity, time), s = 15)
-                                # plt.errorbar(x = centered_energy_bins, y = averages, xerr = xerrors, yerr = zero_errors, fmt = " ")            
                                 plt.errorbar(x = centered_energy_bins, y = yVals, xerr = zero_errors, yerr = yUnc, fmt = " ") 
+                                # plt.errorbar(x = centered_energy_bins, y = averages, xerr = xerrors, yerr = zero_errors, fmt = " ")            
                                 # plt.errorbar(x = centered_energy_bins, y = yVals, xerr = zero_errors, yerr = zero_errors, fmt = " ") 
                             else:
                                 plt.scatter(x = centered_energy_bins, y = yVals, label = "Severity = %s, %s"%(severity, time), s = 10)
@@ -333,13 +371,33 @@ if(__name__ == '__main__'):
 
                             outLocation = "%s/Sev_%s_TaggingProbability_%s-times.png"%(direc_ol, severity, time)
 
-                            print("Out location:",outLocation)
-
                             plt.savefig("%s/Sev_%s_TaggingProbability_%s-times.png"%(direc_ol, severity, time), dpi = 100)
-                            plt.savefig("%s/Sev_%s_TaggingProbability_%s-times.pdf"%(direc_ol, severity, time), dpi = 300)        
+                            plt.savefig("%s/Sev_%s_TaggingProbability_%s-times.pdf"%(direc_ol, severity, time), dpi = 300)    
+
+                            plt.ylim(0.0001, 1)
+                            plt.yscale('log')  
+
+                            plt.savefig("%s/Sev_%s_TaggingProbability_%s-times_log.png"%(direc_ol, severity, time), dpi = 100)
+                            plt.savefig("%s/Sev_%s_TaggingProbability_%s-times_log.pdf"%(direc_ol, severity, time), dpi = 300)                                                           
+
                             plt.close()                     
 
-                            # save values as parquet files to eventually plot together with other datasets / working points    
+                            # save values as parquet files to eventually plot together with other datasets / working points   
+
+                            parquetOutDir = "output/%s/TaggingProbability/"%(sub_dataset)
+                            os.system("mkdir -p %s"%(parquetOutDir))
+                            outName_yVals = "%s/TaggingProbability_Sev_%s_%s-times_values.parquet"%(parquetOutDir, severity, time)
+                            outName_yUnc = "%s/TaggingProbability_Sev_%s_%s-times_statuncer.parquet"%(parquetOutDir, severity, time)
+
+                            yVals_table = pa.table({"data": yVals_before_mask})
+                            yUnc_table = pa.table({"data": yUnc_before_mask})
+                            print("Saving parquet file:",outName_yVals)   
+                            print("Saving parquet file:",outName_yUnc)                   
+                            pa.parquet.write_table(yVals_table, outName_yVals)                
+                            pa.parquet.write_table(yUnc_table, outName_yUnc)    
+
+                            # exec("%s_%s_averages = np.copy(averages)"%(severity, time))
+                            # exec("%s_%s_stdevs = np.copy(stdevs)"%(severity, time))                              
                                 
         if(plotTogether):
 
@@ -357,15 +415,25 @@ if(__name__ == '__main__'):
                 "four" : "s"
             }   
 
-            error = 0
+            error = 1
             log = 1
+            ADCToGeV = 1 # if true, divide x axis values by 2 to get GeV 
 
             # plot average lines on same plots
-            if(variable == "oneMinusEmuOverRealvstwrADCCourseBinning" or variable == "oneMinusEmuOverRealvstwrADCCourseBinningZoomed"):
+            avgPlotVars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "oneMinusEmuOverRealvstwrADCCourseBinningZoomed", "EnergyVsTimeOccupancy"]
+            if(variable in avgPlotVars):
+
                 xbins, ybins = GetBins(variable, dataset)
-                ADCToGeV = 1 # if true, divide x axis values by 2 to get GeV 
+
+                if(variable == "EnergyVsTimeOccupancy"): 
+                    energy_bins = ybins
+                    ol = "/eos/user/a/atishelm/www/EcalL1Optimization/{dataset}/".format(dataset=dataset)                    
+                else: 
+                    energy_bins = xbins
+                    ol = "/eos/user/a/atishelm/www/EcalL1Optimization/Dataset_Comparisons/"
+
                 if(ADCToGeV):
-                    xbins = [float(i)/2. for i in xbins]                
+                    energy_bins = [float(i)/2. for i in energy_bins]                
                 for time in times:
                     print("On time:",time)
                     for sev_i, severity in enumerate(severities):
@@ -376,41 +444,60 @@ if(__name__ == '__main__'):
                         shape = shapeDict[severity]
                         color = colorDict[time]
                         fig, ax = plt.subplots()
-                        for direc in directories:
-                            WP, PF, RECO = GetWorkingPointLabels(direc)                        
+                        for direc_i, direc in enumerate(directories):
+                            if(variable == "EnergyVsTimeOccupancy"):
+                                pass 
+                            else: 
+                                WP, PF, RECO = GetWorkingPointLabels(direc)                        
 
-                            if(fromParquet):
-                                parquetOutDir = "output/%s/%s_%s_%s_%s/"%(dataset, variable, WP, PF, RECO)
-                                os.system("mkdir -p %s"%(parquetOutDir))
-                                averages_path = "%s/%s_%s_%s_%s_%s_%s_averages.parquet"%(parquetOutDir, variable, WP, PF, RECO, severity, time)
-                                stdevs_path = "%s/%s_%s_%s_%s_%s_%s_stdevs.parquet"%(parquetOutDir, variable, WP, PF, RECO, severity, time)                            
+                            # if("Run_352912" in direc):
+                            #     sub_dataset = "Run352912"
+                            # elif("Runs_346446_346447_PilotBeam_2021" in direc):
+                            #     sub_dataset = "PilotBeam2021"
+                            # else: sub_dataset = dataset 
+
+                            # plot from previously saved values so that you don't need to reproduce plots by running over all files again 
+                            if(fromParquet): 
+                                # currently different treatment for EnergyVsTimeOccupancy w.r.t. oneMinus... vars.
+                                if(variable == "EnergyVsTimeOccupancy"):
+                                    parquetOutDir = "output/%s/TaggingProbability/"%(sub_dataset)
+                                    averages_path = "%s/TaggingProbability_Sev_%s_%s-times_values.parquet"%(parquetOutDir, severity, time)
+                                    yUnc_path = "%s/TaggingProbability_Sev_%s_%s-times_statuncer.parquet"%(parquetOutDir, severity, time)
+
+                                else:
+                                    parquetOutDir = "output/%s/%s_%s_%s_%s/"%(dataset, variable, WP, PF, RECO)
+                                    averages_path = "%s/%s_%s_%s_%s_%s_%s_averages.parquet"%(parquetOutDir, variable, WP, PF, RECO, severity, time)
+                                    yUnc_path = "%s/%s_%s_%s_%s_%s_%s_stdevs.parquet"%(parquetOutDir, variable, WP, PF, RECO, severity, time)     
+                       
                                 averages_table = pq.read_table(averages_path)
-                                stdevs_table = pq.read_table(stdevs_path)
+                                yUnc_table = pq.read_table(yUnc_path)
                                 data_averages = averages_table.to_pandas()
-                                stdevs_averages = stdevs_table.to_pandas()
+                                yUnc = yUnc_table.to_pandas()
 
                                 averages_ = data_averages.to_numpy().ravel()
-                                stdevs_ = stdevs_averages.to_numpy().ravel()
+                                yUnc_ = yUnc.to_numpy().ravel()
 
                                 # save values 
                                 averages_path_txt = averages_path.replace(".parquet", ".txt")
-                                stdevs_path_txt = stdevs_path.replace(".parquet", ".txt") 
+                                yUnc_path_txt = yUnc_path.replace(".parquet", ".txt") 
 
                                 np.savetxt(averages_path_txt, averages_, delimiter =', ')   
-                                np.savetxt(stdevs_path_txt, stdevs_, delimiter =', ')                           
+                                np.savetxt(yUnc_path_txt, yUnc_, delimiter =', ')                           
 
                             else:
                                 exec("averages_ = np.copy(%s_%s_averages)"%(severity, time))
-                                exec("stdevs_ = np.copy(%s_%s_stdevs)"%(severity, time))
+                                exec("yUnc_ = np.copy(%s_%s_stdevs)"%(severity, time))
 
-                            energy_bins = xbins
-                            energies_ = xbins
-                            xmin_, xmax_ = xbins[0], xbins[-1]
-                            centered_energy_bins_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) + energy_bins[i] for i in range(len(energy_bins) - 1) ]
+
+                            centerTheXbins = 0
+
+                            if(centerTheXbins): centered_energy_bins_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) + energy_bins[i] for i in range(len(energy_bins) - 1) ]
+                            else: centered_energy_bins_ = energy_bins[:-1]
+
                             xerrors_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) for i in range(len(energy_bins) - 1) ]   
                             
                             averages = np.array(averages_) 
-                            stdevs = np.array(stdevs_) 
+                            yUnc = np.array(yUnc_) 
                             centered_energy_bins = np.array(centered_energy_bins_)
                             xerrors = np.array(xerrors_)
 
@@ -418,7 +505,7 @@ if(__name__ == '__main__'):
 
                             centered_energy_bins = centered_energy_bins[MASK]
                             averages = averages[MASK]
-                            stdevs = stdevs[MASK]  
+                            yUnc = yUnc[MASK]  
                             xerrors = xerrors[MASK]
 
                             zero_errors = [0. for i in range(0, len(averages))]            
@@ -434,64 +521,79 @@ if(__name__ == '__main__'):
                                 "inTime" : "",
                                 "VeryLate" : ""
                             }
-                            plotLabel = "%s"%(WP)
+
+                            # plotLabel = "%s"%(WP)
+
+                            plotLabelDict = {
+                                "Run352912" : "2.5",
+                                "PilotBeam2021" : "0.5"
+                            }
+
+                            plotLabel = plotLabelDict[sub_dataset]
+
                             for key in labelReplaceDict:
                                 val = labelReplaceDict[key]
                                 plotLabel = plotLabel.replace(key, val)
+
+                            color = next(ax._get_lines.prop_cycler)['color']
+
                             if(error):
                                 plt.scatter(x = centered_energy_bins, y = averages, label = plotLabel, s = 15) ### [:-7] = remove the final 7 points (hack)
-                                plt.errorbar(x = centered_energy_bins, y = averages, xerr = xerrors, yerr = zero_errors, fmt = " ")  
+                                # plt.errorbar(x = centered_energy_bins, y = averages, xerr = xerrors, yerr = zero_errors, fmt = " ")  
+                                plt.plot(centered_energy_bins, averages, label = "__nolegend__", linestyle = '-', color = color)   
+                                plt.errorbar(x = centered_energy_bins, y = averages, xerr = zero_errors, yerr = yUnc, fmt = " ", color = color)  
                             else:
                                 plt.scatter(x = centered_energy_bins, y = averages, label = plotLabel, s = 15)
                                 plt.plot(centered_energy_bins, averages, label = "__nolegend__", linestyle = '-')   
-
-                            # with removal of final 7 points:
-                            """
-                            if(error):
-                                plt.scatter(x = centered_energy_bins[:-7], y = averages[:-7], label = plotLabel, s = 15) ### [:-7] = remove the final 7 points (hack)
-                                plt.errorbar(x = centered_energy_bins[:-7], y = averages[:-7], xerr = xerrors[:-7], yerr = zero_errors[:-7], fmt = " ")  
-                            else:
-                                plt.scatter(x = centered_energy_bins[:-7], y = averages[:-7], label = plotLabel, s = 15)
-                                plt.plot(centered_energy_bins[:-7], averages[:-7], label = "__nolegend__", linestyle = '-')
-                            """
-
-                        # plt.legend(loc = 'best', fontsize = 10)
 
                         plt.rcParams['legend.title_fontsize'] = 20
                         plt.legend(loc = 'best', title = r"$\delta_{min}$ (GeV)", fontsize = 20, prop={'size' : 14})
                         plt.rcParams['legend.title_fontsize'] = 20
 
                         plt.ylim(0, 1.01)
-                        print("xmax_ = 17")
-                        xmax_ = 17 
 
                         EB_LABEL_XMIN = 0.18
-                        if(severity == "zero"):
+                        if(severity == "zero" and time == "inTime"):
                             EB_LABEL_XMIN = 0.12 
                             PlotTextLabel = "EM signal, |t|<3ns"
                             xLabel = "Signal $E_{T}$ (GeV)"
-                        else:
+                        elif(severity == "four" and time == "VeryLate"):
                             PlotTextLabel = "Spike, t$\geq$10 ns"
                             xLabel = "Spike $E_{T}$ (GeV)"
+                        else:
+                            PlotTextLabel = "Sev %s, Times %s"%(severity, time)
+                            xLabel = "TP $E_{T}$ (GeV)"                            
+
+                        xmin_, xmax_ = energy_bins[0], energy_bins[-1]
+
+                        xmax_ = 18
+                        print("Setting xmax to:",xmax_)
+
+                        yLabelDict = {
+                            "oneMinusEmuOverRealvstwrADCCourseBinning" : "Average $E_{T}$ fraction subtracted",
+                            "oneMinusEmuOverRealvstwrADCCourseBinningZoomed": "Average $E_{T}$ fraction subtracted",
+                            "EnergyVsTimeOccupancy" : "Tagging probability"
+                        }                        
+
+                        yLabel = yLabelDict[variable]
 
                         plt.xlim(xmin_, xmax_)
-                        # plt.xlabel("Real data TP Et (ADC)", fontsize=15)
                         plt.xlabel(xLabel, fontsize=15)
-                        # plt.ylabel("Average 1 - (Emulated / Real)", fontsize=15)
-                        # plt.ylabel("Average TP ET fraction subtracted", fontsize=15)
-                        plt.ylabel("Average $E_{T}$ fraction subtracted", fontsize=15)
+                        plt.ylabel(yLabel, fontsize=15)
                         plt.grid()
                         plt.xticks(fontsize = 15)
                         plt.yticks(fontsize = 15)
-                        upperRightText, lumi = upperRightTextDict[dataset]
-                        addLumi = 1 
-
-                        # fontsize = 20
-                        # text_xmin = 0.14     
+                        # upperRightText, lumi = upperRightTextDict[sub_dataset]
+                        upperRightText = "upperRightText"
+                        lumi = "lumi"
+                        addLumi = 0
                         fontsize = 16
                         text_xmin = 0.15                               
 
-                        Add_CMS_Header(plt, ax, upperRightText, text_xmin, addLumi, lumi, fontsize)
+                        unit = "unit"
+                        sqrts = "900 GeV"
+
+                        Add_CMS_Header(plt, ax, upperRightText, text_xmin, addLumi, lumi, fontsize, unit, sqrts)
                         plt.text(
                             EB_LABEL_XMIN, 0.85, u"ECAL Barrel",
                             fontsize=14, fontweight='bold',
@@ -513,7 +615,7 @@ if(__name__ == '__main__'):
                         plt.savefig("%s/Sev_%s_%s_Average_%s_linear.pdf"%(ol, severity, time, varLabel), dpi = 300)   
 
                         if(log):
-                            plt.ylim(0.001, 1)
+                            plt.ylim(0.00001, 1)
                             plt.yscale('log')  
                             fig.tight_layout()
                             plt.savefig("%s/Sev_%s_%s_Average_%s_log.png"%(ol, severity, time, varLabel), dpi = 300)

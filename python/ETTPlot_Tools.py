@@ -141,7 +141,8 @@ def GetBins(varLabel_, dataset_):
     elif(dataset_ == "PilotBeam2021"):
         binDict = {
             "realVsEmu" : [[0, 256, 256], [0, 256, 256]],
-            "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 35, 35]], # shorter ET range 
+            "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 256, 256]], # full ET range 
+            # "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 35, 35]], # shorter ET range 
             "EnergyVsTimeOccupancy_ratio" : [[-50, 50, 100],[0, 35, 35]],
             "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1, 41, 40], [0, 1.2, 48]]
         }
@@ -153,7 +154,15 @@ def GetBins(varLabel_, dataset_):
             "EnergyVsTimeOccupancy_ratio" : [[-50, 50, 100],[0, 35, 35]],
             "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1, 41, 40], [0, 1.2, 48]]
         }
-
+    elif(dataset_ == "2021_2022_900GeVCollisions"):
+        binDict = {
+            "realVsEmu" : [[0, 256, 256], [0, 256, 256]],
+            "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 256, 256]], # Full ET range 
+            # "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 35, 35]], # shorter ET range 
+            "EnergyVsTimeOccupancy_ratio" : [[-50, 50, 100],[0, 35, 35]],
+            "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1, 41, 40], [0, 1.2, 48]]
+        }
+        
     xinfo = binDict[varLabel_][0]
     yinfo = binDict[varLabel_][1]
 
