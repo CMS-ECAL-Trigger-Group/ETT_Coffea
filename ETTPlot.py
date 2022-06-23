@@ -277,8 +277,83 @@ if(__name__ == '__main__'):
                         if(variable == "EnergyVsTimeOccupancy"):
                             # Compute ratio of tagged / all per ET bin (integrate over times)
                             # integrate over time 
+
                             Total_Tagged_PerEnergyBin = np.sum(Tagged_Values, axis=0)
                             Total_PerEnergyBin = np.sum(all_Values, axis=0)
+
+                            rebin = 1 
+                            #debug = 1
+
+                            # if rebinning, need to manipulate arrays 
+                            xbins, ybins = GetBins(variable, sub_dataset)
+                            energy_bins = ybins             
+                            # combine bins (0 indexed) (1 -> 9), (10 -> 20), (21 -> 30), (31 -> 40) 
+
+                            if(severity == "four"):
+                                reBins = [[1,32],[33,255]]
+                            else: 
+                                reBins = [[5,32],[32,255]]
+
+                            if(debug):
+                                print("Before rebin tagged:",Total_Tagged_PerEnergyBin)
+                                print("Before rebin total:",Total_PerEnergyBin)
+                                print("Bin edges before rebin:",energy_bins)
+                                print("length:",len(Total_Tagged_PerEnergyBin))
+                                print("length:",len(Total_PerEnergyBin))
+                                print("length:",len(energy_bins))
+
+                            # reBins = [[1,9], [10,20]] # inclusive bin ranges to combine, needs to be in order (i.e. cannot have [10, 20] before [1,9])          
+                            # reBins = [[1,50]] # inclusive bin ranges to combine, needs to be in order (i.e. cannot have [10, 20] before [1,9])          
+                            if(rebin):
+
+                                # begin with copies of original 
+                                Total_Tagged_PerEnergyBin_rebinned = np.copy(Total_Tagged_PerEnergyBin)
+                                Total_PerEnergyBin_rebinned = np.copy(Total_PerEnergyBin)
+                                energy_bins_rebinned = np.copy(energy_bins)
+
+                                # keep track of number of elements removed to shift indicies 
+                                binsRemoved = 0
+                                binEdgesRemoved = 0 
+
+                                # for each new rebin to make 
+                                for newBin in reBins:
+                                    newBinMin_i, newBinMax_i = newBin[0], newBin[1] # indices of range to consolidate into one bin 
+
+                                    # indicies to sum 
+                                    sumIndicesArr = [True if (i >= (newBinMin_i) and i <= (newBinMax_i)) else False for i, val in enumerate(Total_Tagged_PerEnergyBin)]
+                                    Tagged_newBinSum = np.sum(Total_Tagged_PerEnergyBin, where=sumIndicesArr) # get sum from original array so you don't need to worry about already removed elements 
+                                    Total_newBinSum = np.sum(Total_PerEnergyBin, where=sumIndicesArr)
+
+                                    # replace first value in summed vals with sum of those vals
+                                    Total_Tagged_PerEnergyBin_rebinned[newBinMin_i - binsRemoved] = Tagged_newBinSum
+                                    Total_PerEnergyBin_rebinned[newBinMin_i - binsRemoved] = Total_newBinSum
+
+                                    # remove subsequent vals since they're included in sum
+                                    for b_i in range(newBinMin_i, newBinMax_i):
+                                        bin_i_toRemove = b_i + 1 - binsRemoved
+                                        Total_Tagged_PerEnergyBin_rebinned = np.delete(Total_Tagged_PerEnergyBin_rebinned, bin_i_toRemove)
+                                        Total_PerEnergyBin_rebinned = np.delete(Total_PerEnergyBin_rebinned, bin_i_toRemove)
+                                        binsRemoved += 1 
+
+                                    # for bin edges, need to remove middle edges not including min and max
+                                    for b_i in range(newBinMin_i, newBinMax_i):
+                                        bin_i_toRemove = b_i + 1 - binEdgesRemoved
+                                        energy_bins_rebinned = np.delete(energy_bins_rebinned, bin_i_toRemove) 
+                                        binEdgesRemoved += 1 
+                                        if(b_i == newBinMax_i): continue # don't delete upper edge of rebin range 
+
+                                # update original arrays to rebinned versions
+                                Total_Tagged_PerEnergyBin = np.copy(Total_Tagged_PerEnergyBin_rebinned)
+                                Total_PerEnergyBin = np.copy(Total_PerEnergyBin_rebinned)
+                                energy_bins = np.copy(energy_bins_rebinned)
+
+                            if(debug):
+                                print("After rebin tagged:",Total_Tagged_PerEnergyBin)
+                                print("After rebin total:",Total_PerEnergyBin)
+                                print("Bin edges after rebin:",energy_bins)
+                                print("length:",len(Total_Tagged_PerEnergyBin))
+                                print("length:",len(Total_PerEnergyBin))
+                                print("length:",len(energy_bins))
 
                             NOENTRIESMASK = tuple([Total_PerEnergyBin != 0])
                             TaggingProbPerEnergyBin = np.divide(Total_Tagged_PerEnergyBin, Total_PerEnergyBin, out=np.zeros_like(Total_Tagged_PerEnergyBin), where=Total_PerEnergyBin!=0)
@@ -316,9 +391,6 @@ if(__name__ == '__main__'):
                             fig.set_dpi(100)
                             fig.set_size_inches(10, 7.5)
 
-                            xbins, ybins = GetBins(variable, sub_dataset)
-                            energy_bins = ybins
-
                             centerTheXbins = 0
 
                             if(centerTheXbins): centered_energy_bins_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) + energy_bins[i] for i in range(len(energy_bins) - 1) ]
@@ -345,8 +417,6 @@ if(__name__ == '__main__'):
                             if(error):
                                 plt.scatter(x = centered_energy_bins, y = yVals, label = "Severity = %s, %s"%(severity, time), s = 15)
                                 plt.errorbar(x = centered_energy_bins, y = yVals, xerr = zero_errors, yerr = yUnc, fmt = " ") 
-                                # plt.errorbar(x = centered_energy_bins, y = averages, xerr = xerrors, yerr = zero_errors, fmt = " ")            
-                                # plt.errorbar(x = centered_energy_bins, y = yVals, xerr = zero_errors, yerr = zero_errors, fmt = " ") 
                             else:
                                 plt.scatter(x = centered_energy_bins, y = yVals, label = "Severity = %s, %s"%(severity, time), s = 10)
                                 plt.plot(x = centered_energy_bins, y = yVals, label = "__nolegend__", linestyle = '-')
@@ -422,18 +492,7 @@ if(__name__ == '__main__'):
             # plot average lines on same plots
             avgPlotVars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "oneMinusEmuOverRealvstwrADCCourseBinningZoomed", "EnergyVsTimeOccupancy"]
             if(variable in avgPlotVars):
-
-                xbins, ybins = GetBins(variable, dataset)
-
-                if(variable == "EnergyVsTimeOccupancy"): 
-                    energy_bins = ybins
-                    ol = "/eos/user/a/atishelm/www/EcalL1Optimization/{dataset}/".format(dataset=dataset)                    
-                else: 
-                    energy_bins = xbins
-                    ol = "/eos/user/a/atishelm/www/EcalL1Optimization/Dataset_Comparisons/"
-
-                if(ADCToGeV):
-                    energy_bins = [float(i)/2. for i in energy_bins]                
+          
                 for time in times:
                     print("On time:",time)
                     for sev_i, severity in enumerate(severities):
@@ -450,11 +509,11 @@ if(__name__ == '__main__'):
                             else: 
                                 WP, PF, RECO = GetWorkingPointLabels(direc)                        
 
-                            # if("Run_352912" in direc):
-                            #     sub_dataset = "Run352912"
-                            # elif("Runs_346446_346447_PilotBeam_2021" in direc):
-                            #     sub_dataset = "PilotBeam2021"
-                            # else: sub_dataset = dataset 
+                            if("Run_352912" in direc):
+                                sub_dataset = "Run352912"
+                            elif("Runs_346446_346447_PilotBeam_2021" in direc):
+                                sub_dataset = "PilotBeam2021"
+                            else: sub_dataset = dataset 
 
                             # plot from previously saved values so that you don't need to reproduce plots by running over all files again 
                             if(fromParquet): 
@@ -482,14 +541,53 @@ if(__name__ == '__main__'):
                                 yUnc_path_txt = yUnc_path.replace(".parquet", ".txt") 
 
                                 np.savetxt(averages_path_txt, averages_, delimiter =', ')   
-                                np.savetxt(yUnc_path_txt, yUnc_, delimiter =', ')                           
+                                np.savetxt(yUnc_path_txt, yUnc_, delimiter =', ')     
+
 
                             else:
                                 exec("averages_ = np.copy(%s_%s_averages)"%(severity, time))
                                 exec("yUnc_ = np.copy(%s_%s_stdevs)"%(severity, time))
 
 
-                            centerTheXbins = 0
+                            xbins, ybins = GetBins(variable, dataset)
+
+                            if(variable == "EnergyVsTimeOccupancy"): 
+                                energy_bins = ybins
+                                ol = "/eos/user/a/atishelm/www/EcalL1Optimization/{dataset}/".format(dataset=dataset)                    
+                            else: 
+                                energy_bins = xbins
+                                ol = "/eos/user/a/atishelm/www/EcalL1Optimization/Dataset_Comparisons/"
+
+                            rebin = 1
+
+                            if(severity == "four"):
+                                reBins = [[1,32],[33,255]]
+                            else: 
+                                reBins = [[5,32],[32,255]]                            
+
+                            # reBins = [[1,9], [10,20]] # inclusive bin ranges to combine, needs to be in order (i.e. cannot have [10, 20] before [1,9])     
+                            # reBins = [[1,50]] # inclusive bin ranges to combine, needs to be in order (i.e. cannot have [10, 20] before [1,9])          
+
+                            if(rebin):             
+                                energy_bins_rebinned = np.copy(energy_bins)
+
+                                binEdgesRemoved = 0 
+                                for newBin in reBins:
+                                    newBinMin_i, newBinMax_i = newBin[0], newBin[1] 
+
+                                    # for bin edges, need to remove middle edges not including min and max
+                                    for b_i in range(newBinMin_i, newBinMax_i):
+                                        bin_i_toRemove = b_i + 1 - binEdgesRemoved
+                                        energy_bins_rebinned = np.delete(energy_bins_rebinned, bin_i_toRemove) 
+                                        binEdgesRemoved += 1 
+                                        if(b_i == newBinMax_i): continue # don't delete upper edge of rebin range 
+
+                                energy_bins = np.copy(energy_bins_rebinned)                                       
+
+                            if(ADCToGeV):
+                                energy_bins = [float(i)/2. for i in energy_bins]      
+
+                            centerTheXbins = 1
 
                             if(centerTheXbins): centered_energy_bins_ = [ ((energy_bins[i+1] - energy_bins[i]) / 2.) + energy_bins[i] for i in range(len(energy_bins) - 1) ]
                             else: centered_energy_bins_ = energy_bins[:-1]
@@ -522,8 +620,6 @@ if(__name__ == '__main__'):
                                 "VeryLate" : ""
                             }
 
-                            # plotLabel = "%s"%(WP)
-
                             plotLabelDict = {
                                 "Run352912" : "2.5",
                                 "PilotBeam2021" : "0.5"
@@ -537,36 +633,46 @@ if(__name__ == '__main__'):
 
                             color = next(ax._get_lines.prop_cycler)['color']
 
+                            addXErr = 1 
+                            addLine = 1 
+                            if(addXErr):
+                                xerr = xerrors 
+                                addLine = 0 
+                            else:
+                                xerr = zero_errors
+
                             if(error):
                                 plt.scatter(x = centered_energy_bins, y = averages, label = plotLabel, s = 15) ### [:-7] = remove the final 7 points (hack)
-                                # plt.errorbar(x = centered_energy_bins, y = averages, xerr = xerrors, yerr = zero_errors, fmt = " ")  
-                                plt.plot(centered_energy_bins, averages, label = "__nolegend__", linestyle = '-', color = color)   
-                                plt.errorbar(x = centered_energy_bins, y = averages, xerr = zero_errors, yerr = yUnc, fmt = " ", color = color)  
+                                plt.errorbar(x = centered_energy_bins, y = averages, xerr = xerr, yerr = yUnc, fmt = " ", color = color)  
+                                if(addLine): plt.plot(centered_energy_bins, averages, label = "__nolegend__", linestyle = '-', color = color)   
                             else:
                                 plt.scatter(x = centered_energy_bins, y = averages, label = plotLabel, s = 15)
-                                plt.plot(centered_energy_bins, averages, label = "__nolegend__", linestyle = '-')   
-
-                        plt.rcParams['legend.title_fontsize'] = 20
-                        plt.legend(loc = 'best', title = r"$\delta_{min}$ (GeV)", fontsize = 20, prop={'size' : 14})
-                        plt.rcParams['legend.title_fontsize'] = 20
-
-                        plt.ylim(0, 1.01)
+                                if(addLine): plt.plot(centered_energy_bins, averages, label = "__nolegend__", linestyle = '-')   
 
                         EB_LABEL_XMIN = 0.18
                         if(severity == "zero" and time == "inTime"):
                             EB_LABEL_XMIN = 0.12 
+                            EB_LABEL_YMAX = 0.85
+                            loc = 'upper right'
                             PlotTextLabel = "EM signal, |t|<3ns"
                             xLabel = "Signal $E_{T}$ (GeV)"
                         elif(severity == "four" and time == "VeryLate"):
+                            loc = 'lower right'
+                            EB_LABEL_YMAX = 0.45
                             PlotTextLabel = "Spike, t$\geq$10 ns"
                             xLabel = "Spike $E_{T}$ (GeV)"
                         else:
                             PlotTextLabel = "Sev %s, Times %s"%(severity, time)
                             xLabel = "TP $E_{T}$ (GeV)"                            
 
-                        xmin_, xmax_ = energy_bins[0], energy_bins[-1]
+                        plt.rcParams['legend.title_fontsize'] = 20
+                        plt.legend(loc = loc, title = r"$\delta_{min}$ (GeV)", fontsize = 20, prop={'size' : 14})
+                        plt.rcParams['legend.title_fontsize'] = 20
 
-                        xmax_ = 18
+                        plt.ylim(0, 1.01)
+
+                        xmin_, xmax_ = energy_bins[0], energy_bins[-1]
+                        xmax_ = 17
                         print("Setting xmax to:",xmax_)
 
                         yLabelDict = {
@@ -583,19 +689,20 @@ if(__name__ == '__main__'):
                         plt.grid()
                         plt.xticks(fontsize = 15)
                         plt.yticks(fontsize = 15)
-                        # upperRightText, lumi = upperRightTextDict[sub_dataset]
                         upperRightText = "upperRightText"
                         lumi = "lumi"
-                        addLumi = 0
+                        addLumi = 1
                         fontsize = 16
                         text_xmin = 0.15                               
 
-                        unit = "unit"
-                        sqrts = "900 GeV"
+                        if(dataset == "2021_2022_900GeVCollisions"):
+                            unit = "{\mu}b"
+                            lumi = "82-145"
+                            sqrts = "900 GeV"
 
                         Add_CMS_Header(plt, ax, upperRightText, text_xmin, addLumi, lumi, fontsize, unit, sqrts)
                         plt.text(
-                            EB_LABEL_XMIN, 0.85, u"ECAL Barrel",
+                            EB_LABEL_XMIN, EB_LABEL_YMAX, u"ECAL Barrel",
                             fontsize=14, fontweight='bold',
                             horizontalalignment='left',
                             verticalalignment='bottom',
@@ -603,7 +710,7 @@ if(__name__ == '__main__'):
                         )   
 
                         plt.text(
-                            EB_LABEL_XMIN, 0.775, PlotTextLabel,
+                            EB_LABEL_XMIN, EB_LABEL_YMAX - 0.075, PlotTextLabel,
                             fontsize=14, fontweight='bold',
                             horizontalalignment='left',
                             verticalalignment='bottom',
