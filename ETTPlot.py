@@ -282,7 +282,7 @@ if(__name__ == '__main__'):
                             Total_PerEnergyBin = np.sum(all_Values, axis=0)
 
                             rebin = 1 
-                            #debug = 1
+                            debug = 0
 
                             # if rebinning, need to manipulate arrays 
                             xbins, ybins = GetBins(variable, sub_dataset)
@@ -292,7 +292,7 @@ if(__name__ == '__main__'):
                             if(severity == "four"):
                                 reBins = [[1,32],[33,255]]
                             else: 
-                                reBins = [[5,32],[32,255]]
+                                reBins = [[5,32],[33,255]]
 
                             if(debug):
                                 print("Before rebin tagged:",Total_Tagged_PerEnergyBin)
@@ -375,12 +375,17 @@ if(__name__ == '__main__'):
                                         NTagged_unc = 1/NTagged
 
                                     if(NTotal == 0):
-                                        NTotal_unc = 0
+                                        abs_error = 0 
+                                        # NTotal_unc = 0
                                     else:
-                                        NTotal_unc = 1/NTotal                                        
+                                        # NTotal_unc = 1/NTotal     
+                                        abs_error = np.sqrt(avg_val*(1-float(avg_val))/NTotal)                                   
 
-                                    rel_error = np.sqrt(NTagged_unc + NTotal_unc)
-                                    abs_error = avg_val * float(rel_error)
+                                    # rel_error = np.sqrt(NTagged_unc + NTotal_unc)
+                                    # abs_error = avg_val * float(rel_error)
+
+                                    # abs_error = np.sqrt(avg_val*(1-float(avg_val))/NTotal)
+
                                     TaggingProbPerEnergyBin_STATUNC.append(abs_error)
                             
                             TaggingProbPerEnergyBin_STATUNC = np.array(TaggingProbPerEnergyBin_STATUNC)
@@ -502,7 +507,20 @@ if(__name__ == '__main__'):
                             continue     
                         shape = shapeDict[severity]
                         color = colorDict[time]
-                        fig, ax = plt.subplots()
+
+                        # ratio plot 
+                        fig, axarr = plt.subplots(2, 
+                                                    sharex=True, 
+                                                    gridspec_kw={
+                                                        'hspace': 0.15,
+                    #                                     'height_ratios': (0.8,0.2)
+                                                        'height_ratios': (0.7,0.3)
+                                                        }
+                                                    )    
+                        fig.set_size_inches(10, 7.5)
+                        upper = axarr[0]                   
+                        lower = axarr[1]
+
                         for direc_i, direc in enumerate(directories):
                             if(variable == "EnergyVsTimeOccupancy"):
                                 pass 
@@ -563,10 +581,7 @@ if(__name__ == '__main__'):
                             if(severity == "four"):
                                 reBins = [[1,32],[33,255]]
                             else: 
-                                reBins = [[5,32],[32,255]]                            
-
-                            # reBins = [[1,9], [10,20]] # inclusive bin ranges to combine, needs to be in order (i.e. cannot have [10, 20] before [1,9])     
-                            # reBins = [[1,50]] # inclusive bin ranges to combine, needs to be in order (i.e. cannot have [10, 20] before [1,9])          
+                                reBins = [[5,32],[33,255]]                            
 
                             if(rebin):             
                                 energy_bins_rebinned = np.copy(energy_bins)
@@ -631,7 +646,7 @@ if(__name__ == '__main__'):
                                 val = labelReplaceDict[key]
                                 plotLabel = plotLabel.replace(key, val)
 
-                            color = next(ax._get_lines.prop_cycler)['color']
+                            color = next(upper._get_lines.prop_cycler)['color']
 
                             addXErr = 1 
                             addLine = 1 
@@ -642,16 +657,22 @@ if(__name__ == '__main__'):
                                 xerr = zero_errors
 
                             if(error):
-                                plt.scatter(x = centered_energy_bins, y = averages, label = plotLabel, s = 15) ### [:-7] = remove the final 7 points (hack)
-                                plt.errorbar(x = centered_energy_bins, y = averages, xerr = xerr, yerr = yUnc, fmt = " ", color = color)  
-                                if(addLine): plt.plot(centered_energy_bins, averages, label = "__nolegend__", linestyle = '-', color = color)   
+                                upper.scatter(x = centered_energy_bins, y = averages, label = plotLabel, s = 15) ### [:-7] = remove the final 7 points (hack)
+                                upper.errorbar(x = centered_energy_bins, y = averages, xerr = xerr, yerr = yUnc, fmt = " ", color = color)  
+                                if(addLine): upper.plot(centered_energy_bins, averages, label = "__nolegend__", linestyle = '-', color = color)   
                             else:
-                                plt.scatter(x = centered_energy_bins, y = averages, label = plotLabel, s = 15)
-                                if(addLine): plt.plot(centered_energy_bins, averages, label = "__nolegend__", linestyle = '-')   
+                                upper.scatter(x = centered_energy_bins, y = averages, label = plotLabel, s = 15)
+                                if(addLine): upper.plot(centered_energy_bins, averages, label = "__nolegend__", linestyle = '-')   
+                            
+                            plt.yticks(fontsize = 15)     
+
+                            exec("y_vals_%s = np.copy(averages)"%(direc_i)) # save values for ratio later 
+                            exec("y_Unc_%s = np.copy(yUnc)"%(direc_i)) # save values for ratio later 
+
 
                         EB_LABEL_XMIN = 0.18
                         if(severity == "zero" and time == "inTime"):
-                            EB_LABEL_XMIN = 0.12 
+                            EB_LABEL_XMIN = 0.16 
                             EB_LABEL_YMAX = 0.85
                             loc = 'upper right'
                             PlotTextLabel = "EM signal, |t|<3ns"
@@ -666,10 +687,10 @@ if(__name__ == '__main__'):
                             xLabel = "TP $E_{T}$ (GeV)"                            
 
                         plt.rcParams['legend.title_fontsize'] = 20
-                        plt.legend(loc = loc, title = r"$\delta_{min}$ (GeV)", fontsize = 20, prop={'size' : 14})
+                        upper.legend(loc = loc, title = r"$\delta_{min}$ (GeV)", fontsize = 20, prop={'size' : 14})
                         plt.rcParams['legend.title_fontsize'] = 20
 
-                        plt.ylim(0, 1.01)
+                        upper.set_ylim(0, 1.01)
 
                         xmin_, xmax_ = energy_bins[0], energy_bins[-1]
                         xmax_ = 17
@@ -685,28 +706,83 @@ if(__name__ == '__main__'):
 
                         plt.xlim(xmin_, xmax_)
                         plt.xlabel(xLabel, fontsize=15)
-                        plt.ylabel(yLabel, fontsize=15)
+                        # plt.ylabel(yLabel, fontsize=15)
                         plt.grid()
                         plt.xticks(fontsize = 15)
                         plt.yticks(fontsize = 15)
+
+                        # upper.set_xlim(xmin_, xmax_)
+                        upper.set_ylabel(yLabel, fontsize=15)
+                        upper.grid()
+                        # upper.set_xticks_size(fontsize = 15)
+                        # upper.set_yticks_size(fontsize = 15)       
+                        upper.tick_params(axis='y', labelsize = 15)
+
+                        lower.set_ylabel(r"  $\frac{\delta_{min} = 2.5 GeV}{\delta_{min} = 0.5 GeV}$", fontsize=15)           
+                        lower.set_ylim(0, 2)      
+                        lower.plot([xmin_, xmax_],[1,1],linestyle=':', color = 'black')
+
+                        ratio_vals = np.divide(y_vals_0, y_vals_1, out=np.zeros_like(y_vals_1), where=y_vals_1!=0)
+
+                        # compute statistical uncertainty in ratio 
+                        ratio_unc = [] 
+
+                        for i, ratio_val in enumerate(ratio_vals):
+                            if(ratio_val == 0):
+                                ratio_unc.append(0)
+                            else:
+                                N_0_unc = float(y_Unc_0[i])
+                                N_1_unc = float(y_Unc_1[i])
+
+                                N_0 = float(y_vals_0[i])
+                                N_1 = float(y_vals_1[i])
+
+                                if(N_0 == 0):
+                                    N_0_unc_term = 0
+                                else:
+                                    N_0_unc_term = (N_0_unc/N_0)**2
+
+                                if(N_1 == 0):
+                                    N_1_unc_term = 0
+                                else:
+                                    N_1_unc_term = (N_1_unc/N_1)**2                                      
+
+                                rel_error = np.sqrt( N_0_unc_term + N_1_unc_term)
+                                abs_error = ratio_val * float(rel_error)
+                                ratio_unc.append(abs_error)                        
+
+                        print("ratio_unc:",ratio_unc)
+
+                        if(error):
+                            # color = next(upper._get_lines.prop_cycler)['color']
+                            lower.scatter(x = centered_energy_bins, y = ratio_vals, label = plotLabel, s = 15) ### [:-7] = remove the final 7 points (hack)
+                            lower.errorbar(x = centered_energy_bins, y = ratio_vals, xerr = xerr, yerr = ratio_unc, fmt = " ", color = 'C0')  
+                            #if(addLine): upper.plot(centered_energy_bins, averages, label = "__nolegend__", linestyle = '-', color = color)   
+                        else:
+                            lower.scatter(x = centered_energy_bins, y = ratio_vals, label = plotLabel, s = 15)
+                            #if(addLine): upper.plot(centered_energy_bins, averages, label = "__nolegend__", linestyle = '-')                        
+
+                        # exec("y_vals_%s = np.copy(averages)"%(direc_i)) # save values for ratio later 
+                        # exec("y_Unc_%s = np.copy(yUnc)"%(direc_i)) # save values for ratio later                         
+
                         upperRightText = "upperRightText"
                         lumi = "lumi"
                         addLumi = 1
                         fontsize = 16
-                        text_xmin = 0.15                               
+                        text_xmin = 0.1                          
 
                         if(dataset == "2021_2022_900GeVCollisions"):
                             unit = "{\mu}b"
                             lumi = "82-145"
                             sqrts = "900 GeV"
 
-                        Add_CMS_Header(plt, ax, upperRightText, text_xmin, addLumi, lumi, fontsize, unit, sqrts)
+                        Add_CMS_Header(plt, upper, upperRightText, text_xmin, addLumi, lumi, fontsize, unit, sqrts)
                         plt.text(
                             EB_LABEL_XMIN, EB_LABEL_YMAX, u"ECAL Barrel",
                             fontsize=14, fontweight='bold',
                             horizontalalignment='left',
                             verticalalignment='bottom',
-                            transform=ax.transAxes
+                            transform=upper.transAxes
                         )   
 
                         plt.text(
@@ -714,17 +790,19 @@ if(__name__ == '__main__'):
                             fontsize=14, fontweight='bold',
                             horizontalalignment='left',
                             verticalalignment='bottom',
-                            transform=ax.transAxes
+                            transform=upper.transAxes
                         )                           
                         
-                        fig.tight_layout()
+                        # fig.tight_layout()
+                        plt.tight_layout()
                         plt.savefig("%s/Sev_%s_%s_Average_%s_linear.png"%(ol, severity, time, varLabel), dpi = 300)
                         plt.savefig("%s/Sev_%s_%s_Average_%s_linear.pdf"%(ol, severity, time, varLabel), dpi = 300)   
 
                         if(log):
-                            plt.ylim(0.00001, 1)
-                            plt.yscale('log')  
-                            fig.tight_layout()
+                            upper.set_ylim(0.00001, 1)
+                            upper.set_yscale('log')  
+                            # fig.tight_layout()
+                            plt.tight_layout()
                             plt.savefig("%s/Sev_%s_%s_Average_%s_log.png"%(ol, severity, time, varLabel), dpi = 300)
                             plt.savefig("%s/Sev_%s_%s_Average_%s_log.pdf"%(ol, severity, time, varLabel), dpi = 300)    
                         plt.close()
