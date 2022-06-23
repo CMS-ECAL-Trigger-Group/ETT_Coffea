@@ -754,16 +754,12 @@ if(__name__ == '__main__'):
                         print("ratio_unc:",ratio_unc)
 
                         if(error):
-                            # color = next(upper._get_lines.prop_cycler)['color']
                             lower.scatter(x = centered_energy_bins, y = ratio_vals, label = plotLabel, s = 15) ### [:-7] = remove the final 7 points (hack)
                             lower.errorbar(x = centered_energy_bins, y = ratio_vals, xerr = xerr, yerr = ratio_unc, fmt = " ", color = 'C0')  
                             #if(addLine): upper.plot(centered_energy_bins, averages, label = "__nolegend__", linestyle = '-', color = color)   
                         else:
                             lower.scatter(x = centered_energy_bins, y = ratio_vals, label = plotLabel, s = 15)
                             #if(addLine): upper.plot(centered_energy_bins, averages, label = "__nolegend__", linestyle = '-')                        
-
-                        # exec("y_vals_%s = np.copy(averages)"%(direc_i)) # save values for ratio later 
-                        # exec("y_Unc_%s = np.copy(yUnc)"%(direc_i)) # save values for ratio later                         
 
                         upperRightText = "upperRightText"
                         lumi = "lumi"

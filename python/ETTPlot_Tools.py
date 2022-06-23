@@ -255,7 +255,7 @@ def ComputeAverages(xbins_, Values_array_, ybinVals):
 def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dataset, lumi, unit, sqrts, FGSelection):
     print("Making plot")  
 
-    normalize = 0 
+    normalize = 0
 
     # Prepare figure and axes 
     fig, ax = plt.subplots()
