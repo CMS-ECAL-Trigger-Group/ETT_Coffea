@@ -2,7 +2,7 @@
 Abraham Tishelman-Charny
 17 November 2021
 
-The purpose of this notebook is to plot quantities from ETTAnalyzer outputs.
+The purpose of this module is to plot quantities from ETT_Coffea outputs.
 
 Example commands:
 
@@ -10,6 +10,9 @@ conda activate higgs-dna # to create parquet files
 
 # Comparison of 2021 and 2022 900 GeV collisions
 
+python3 ETTPlot.py --dataset 2021_2022_900GeVCollisions --variables EmulEnergyVsTimeOccupancy --maxFiles 999999 --times all,inTime,VeryLate --severities zero,four --plotIndividuals --FGSelections all,EmulTagged
+python3 ETTPlot.py --dataset 2021_2022_900GeVCollisions --variables EBOcc --maxFiles 999999 --times all --severities all --plotIndividuals --FGSelections all,DataNotEqEmul
+python3 ETTPlot.py --dataset 2021_2022_900GeVCollisions --variables EBOcc --maxFiles 10 --times all --severities all --plotIndividuals --FGSelections all,Tagged,DataNotEqEmul
 python3 ETTPlot.py --dataset 2021_2022_900GeVCollisions --variables EnergyVsTimeOccupancy --maxFiles 999999 --times all,Early,inTime,Late,VeryLate --severities all,zero,three,four --plotIndividuals
 python3 ETTPlot.py --dataset 2021_2022_900GeVCollisions --variables EnergyVsTimeOccupancy --maxFiles 999999 --times all,Early,inTime,Late,VeryLate --severities all,zero,three,four --plotTogether --fromParquet
 
@@ -39,7 +42,6 @@ python3 ETTPlot.py --directory /eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trig
 
 python3 ETTPlot.py --directory /eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_weightsRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/220210_104615/all_output/ --variables oneMinusEmuOverRealvstwrADCCourseBinning,EnergyVsTimeOccupancy --severities zero --times inTime --maxFiles 10000 --outputLocation "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta0p5prime_WithOddPF_WeightsReco/"
 python3 ETTPlot.py --directory /eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_0p5PrimeODDweights/220210_094402/all_output/ --variables oneMinusEmuOverRealvstwrADCCourseBinning,EnergyVsTimeOccupancy --severities zero --times inTime --maxFiles 10000 --outputLocation "/eos/user/a/atishelm/www/EcalL1Optimization/PilotBeam2021/MinDelta0p5prime_WithOddPF_MultiFitReco/"
-python3 ETTPlot.py --directory /eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Runs_346446_346447_PilotBeam_2021/ETTAnalyzer_CMSSW_12_1_0_pre3_DoubleWeights_MultifitRecoMethod_StripZeroingMode_WithOddPeakFinder_2p5PrimeODDweights/220209_125921/all_output/ --variables oneMinusEmuOverRealvstwrADCCourseBinning,EnergyVsTimeOccupancy --maxFiles 100 
 """
 
 import numpy as np
@@ -55,10 +57,10 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 parser = argparse.ArgumentParser()
-# parser.add_argument("--directory", type = str, default = "NODIRECTORY", required=True, help = "Directory with input files")
 parser.add_argument("--variables", type = str, default = "RealVsEmu", help = "Comma separated list of variables to plot") 
 parser.add_argument("--times", type = str, default = "all,Early,inTime,Late,VeryLate", help = "Comma separated list of times to plot") 
 parser.add_argument("--severities", type = str, default = "zero,three,four", help = "Comma separated list of severities to plot") 
+parser.add_argument("--FGSelections", type = str, default = "all,Tagged", help = "Comma separated list of FGBit scenarios to plot") 
 parser.add_argument("--maxFiles", type = int, default = 1, help = "Max number of files to process")
 #parser.add_argument("--outputLocation", type = str, required = True, help = "Output directory for beautiful plots") 
 parser.add_argument("--dataset", type = str, required = True, help = "Dataset that was run over. Options: FullReadoutData_2017_2018, PilotBeam2021") 
@@ -66,42 +68,21 @@ parser.add_argument("--plotIndividuals", action="store_true", default = False, h
 parser.add_argument("--plotTogether", action="store_true", default = False, help = "Produce a plot for each selection")
 parser.add_argument("--fromParquet", action="store_true", default = False, help = "Plot using parquet files")
 
-# For real vs. emu plots:
-# parser.add_argument("--plotRatio", action="store_true", default = False, help = "Produce a ratio plot of tagged / all TPs")
-# parser.add_argument("--doSymLog", action="store_true", default = False, help = "Plot with symmetric log scale")
-# parser.add_argument("--addPlotText", type = int, default = 1, help = "Add text on plot")
-# parser.add_argument("--selections", type = str, default = "clean", help = "Comma separated list of selections to apply")
-# parser.add_argument("--ymax", type = float, default = 256, help = "ymax")
-# parser.add_argument("--xmax", type = float, default = 256, help = "xmax")
-# parser.add_argument("--zmax", type = float, default = -1, help = "zmax")
-
 args = parser.parse_args()
-
-# directory = args.directory 
-# FullReadout data 2017/2018 
 
 variables = args.variables.split(',')
 times = args.times.split(',')
 severities = args.severities.split(',')
+FGSelections = args.FGSelections.split(',')
 maxFiles = args.maxFiles 
-#ol = args.outputLocation
 dataset = args.dataset
 plotIndividuals = args.plotIndividuals 
 plotTogether = args.plotTogether
 fromParquet = args.fromParquet
 
-ol = "/eos/user/a/atishelm/www/EcalL1Optimization/{dataset}/".format(dataset=dataset)
-# ol = "/eos/user/a/atishelm/www/EcalL1Optimization/{dataset}/AllWorkingPoints/".format(dataset=dataset)
+N_FGSels = len(FGSelections)
 
-# For real vs. emu plots:
-# zmax = args.zmax 
-# ymax = args.ymax
-# xmax = args.xmax 
-# selections = args.selections.split(',')
-# doSymLog = args.doSymLog 
-# plotIndividuals = args.plotIndividuals
-# plotRatio = args.plotRatio 
-# addPlotText = args.addPlotText
+ol = "/eos/user/a/atishelm/www/EcalL1Optimization/{dataset}/".format(dataset=dataset)
 
 if(dataset == "FullReadoutData_2018"):
     directories = [
@@ -170,7 +151,9 @@ if(__name__ == '__main__'):
         "realVsEmu": "realVsEmu",
         "EnergyVsTimeOccupancy" : "EnergyVsTimeOccupancy",
         "oneMinusEmuOverRealvstwrADCCourseBinning" : "oneMinusEmuOverRealvstwrADCCourseBinning",
-        "oneMinusEmuOverRealvstwrADCCourseBinningZoomed" : "oneMinusEmuOverRealvstwrADCCourseBinningZoomed"
+        "oneMinusEmuOverRealvstwrADCCourseBinningZoomed" : "oneMinusEmuOverRealvstwrADCCourseBinningZoomed",
+        "EBOcc" : "EBOcc",
+        "EmulEnergyVsTimeOccupancy" : "EmulEnergyVsTimeOccupancy"
     }
 
     # Make output directory if it doesn't exist 
@@ -187,8 +170,10 @@ if(__name__ == '__main__'):
         if(plotIndividuals):
             for direc in directories:
                 print("direc:",direc)
-                if("Run_352912" in direc or "PilotBeam_2021" in direc): pass 
-                else: WP, PF, RECO = GetWorkingPointLabels(direc) # if varying working points 
+                if("Run_352912" in direc or "PilotBeam_2021" in direc):
+                    WP, PF, RECO = "GT", "GT", "Weights"
+                else: 
+                    WP, PF, RECO = GetWorkingPointLabels(direc) # if varying working points 
 
                 direc_ol = direc_ol_dict[direc]
 
@@ -198,9 +183,9 @@ if(__name__ == '__main__'):
                     sub_dataset = "PilotBeam2021"
                 else: sub_dataset = dataset 
 
-                # if(sub_dataset == "Run352912"): 
-                    # print("Skipping ",sub_dataset)
-                    # continue 
+                if(sub_dataset == "PilotBeam2021"): 
+                    print("Skipping ",sub_dataset)
+                    continue 
 
                 for severity in severities:
                     print("On severity:",severity)
@@ -210,7 +195,7 @@ if(__name__ == '__main__'):
                             print("Skipping in time severity three as they shouldn't exist by definition")
                             continue 
 
-                        for FGSelection in ["all", "Tagged"]:
+                        for FGSelection in FGSelections:
                             print("FGSelection:",FGSelection)
                             print("On Var: %s, Sev: %s, time: %s"%(variable, severity, time))
                             thisDirec = "%s/%s/%s/%s/"%(direc, variable, severity, time) # directory for a given variable, severity, time 
@@ -223,9 +208,10 @@ if(__name__ == '__main__'):
                             if(maxFiles == 999999):
                                 maxFilesDict = {
                                     "Run352912" : 3077,
-                                    "PilotBeam2021" : 1412 
+                                    "PilotBeam2021" : 1412                                    
                                 }
                                 maxFiles = maxFilesDict[sub_dataset]
+                                print("maxFiles:",maxFiles)
 
                             for i in range(n_files):
                                 if(i > maxFiles):
@@ -247,12 +233,14 @@ if(__name__ == '__main__'):
                             upperRightText, lumi, unit, sqrts = upperRightTextDict[sub_dataset]
                             averages, stdevs = MakeETTPlot(These_Values, variable, severity, time, direc_ol, upperRightText, sub_dataset, lumi, unit, sqrts, FGSelection) # make plots and return averages 
 
-                            exec("%s_Values = np.copy(These_Values)"%(FGSelection))                                
+                            exec("%s_Values = np.copy(These_Values)"%(FGSelection))           
 
-                            # save averages and stdevs as parquet files (choosing parquet for fun / experience) to combine everything later 
-                            # save averages for each case: var, WP, PF, RECO, Sev, Time
+                            # averageComputingVars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "oneMinusEmuOverRealvstwrADCCourseBinningZoomed", "EmulEnergyVsTimeOccupancy"]                     
+                            averageComputingVars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "oneMinusEmuOverRealvstwrADCCourseBinningZoomed"]                     
 
-                            if((variable == "oneMinusEmuOverRealvstwrADCCourseBinning") or (variable == "oneMinusEmuOverRealvstwrADCCourseBinningZoomed")):                                   
+                            if(variable in averageComputingVars):
+                                # save averages and stdevs as parquet files (choosing parquet for fun / experience) to combine everything later 
+                                # save averages for each case: var, WP, PF, RECO, Sev, Time
 
                                 parquetOutDir = "output/%s/%s_%s_%s_%s/"%(sub_dataset, variable, WP, PF, RECO)
                                 os.system("mkdir -p %s"%(parquetOutDir))
@@ -269,12 +257,15 @@ if(__name__ == '__main__'):
                                 exec("%s_%s_averages = np.copy(averages)"%(severity, time))
                                 exec("%s_%s_stdevs = np.copy(stdevs)"%(severity, time))
 
-                        # Make ratio of tagged / all to see which region of phase space is tagged by double weights 
-                        fraction = np.divide(Tagged_Values, all_Values, out=np.zeros_like(Tagged_Values), where=all_Values!=0)
-                        averages, stdevs = MakeETTPlot(fraction, variable, severity, time, direc_ol, upperRightText, sub_dataset, lumi, unit, sqrts, "ratio") # make plots and return averages 
+                        if(variable != "EBOcc" and variable != "realVsEmu"):
+                            if(variable == "EmulEnergyVsTimeOccupancy"): # emulated 
+                                exec("Tagged_Values = np.copy(EmulTagged_Values)")
+                            # Make ratio of tagged / all to see which region of phase space is tagged by double weights 
+                            fraction = np.divide(Tagged_Values, all_Values, out=np.zeros_like(Tagged_Values), where=all_Values!=0)
+                            averages, stdevs = MakeETTPlot(fraction, variable, severity, time, direc_ol, upperRightText, sub_dataset, lumi, unit, sqrts, "ratio") # make plots and return averages 
 
                         # If variable is energy vs time, compute Tagging probability vs. ET 
-                        if(variable == "EnergyVsTimeOccupancy"):
+                        if(variable == "EnergyVsTimeOccupancy" or variable == "EmulEnergyVsTimeOccupancy"):
                             # Compute ratio of tagged / all per ET bin (integrate over times)
                             # integrate over time 
 
@@ -291,6 +282,7 @@ if(__name__ == '__main__'):
 
                             if(severity == "four"):
                                 reBins = [[1,32],[33,255]]
+                                # reBins = [[1,21], [22,23], [24,32], [33,255]]
                             else: 
                                 reBins = [[5,32],[33,255]]
 
@@ -379,7 +371,7 @@ if(__name__ == '__main__'):
                                         # NTotal_unc = 0
                                     else:
                                         # NTotal_unc = 1/NTotal     
-                                        abs_error = np.sqrt(avg_val*(1-float(avg_val))/NTotal)                                   
+                                        abs_error = np.sqrt(avg_val*(1-float(avg_val))/NTotal) # uncertainty for ratios which have common entries in numerator and denominator (not statistically independent)                            
 
                                     # rel_error = np.sqrt(NTagged_unc + NTotal_unc)
                                     # abs_error = avg_val * float(rel_error)
@@ -426,43 +418,55 @@ if(__name__ == '__main__'):
                                 plt.scatter(x = centered_energy_bins, y = yVals, label = "Severity = %s, %s"%(severity, time), s = 10)
                                 plt.plot(x = centered_energy_bins, y = yVals, label = "__nolegend__", linestyle = '-')
 
-                            yLabelDict = {
-                                "oneMinusEmuOverRealvstwrADCCourseBinning" : "Average 1 - (Emulated / Real)",
-                                "oneMinusEmuOverRealvstwrADCCourseBinningZoomed": "Average 1 - (Emulated / Real)",
-                                "EnergyVsTimeOccupancy" : "Tagging probability"
+                            LabelDict = {
+                                "oneMinusEmuOverRealvstwrADCCourseBinning" : ["Average 1 - (Emulated / Real)", r"Real data TP $E_{T}$ (ADC)"],
+                                "oneMinusEmuOverRealvstwrADCCourseBinningZoomed": ["Average 1 - (Emulated / Real)", r"Real data TP $E_{T}$ (ADC)"],
+                                "EnergyVsTimeOccupancy" : ["Tagging probability", r"Real data TP $E_{T}$ (ADC)"],
+                                "EmulEnergyVsTimeOccupancy" : ["Emulated tagging probability", r"Emulated TP $E_{T}$ (ADC)"]
                             }
 
-                            yLabel = yLabelDict[variable]
+                            varFileNameDict = {
+                                "EnergyVsTimeOccupancy" : "TaggingProbability",
+                                "EmulEnergyVsTimeOccupancy" : "EmulatedTaggingProbability"                                
+                            }
 
-                            plt.xlabel(r"Real data TP $E_{T}$ (ADC)", fontsize=15)
+                            outFileVarName = varFileNameDict[variable]
+
+                            yLabel, xLabel = LabelDict[variable]
+
+                            plt.xlabel(xLabel, fontsize=15)
                             plt.ylabel(yLabel, fontsize=15)    
                             plt.legend(loc = 'best', fontsize = 15)
                             plt.ylim(0, 1.01)
+
+                            xmax_ = 17
+                            print("Setting xmax to:",xmax_)
+
                             plt.xlim(xmin_, xmax_)
                             plt.grid()
                             if(log):
                                 plt.ylim(0.0001, 1)
                                 plt.yscale('log')  
 
-                            outLocation = "%s/Sev_%s_TaggingProbability_%s-times.png"%(direc_ol, severity, time)
+                            outLocation = "%s/Sev_%s_%s_%s-times.png"%(direc_ol, severity, outFileVarName, time)
 
-                            plt.savefig("%s/Sev_%s_TaggingProbability_%s-times.png"%(direc_ol, severity, time), dpi = 100)
-                            plt.savefig("%s/Sev_%s_TaggingProbability_%s-times.pdf"%(direc_ol, severity, time), dpi = 300)    
+                            plt.savefig("%s/Sev_%s_%s_%s-times.png"%(direc_ol, severity, outFileVarName, time), dpi = 100)
+                            plt.savefig("%s/Sev_%s_%s_%s-times.pdf"%(direc_ol, severity, outFileVarName, time), dpi = 300)    
 
                             plt.ylim(0.0001, 1)
                             plt.yscale('log')  
 
-                            plt.savefig("%s/Sev_%s_TaggingProbability_%s-times_log.png"%(direc_ol, severity, time), dpi = 100)
-                            plt.savefig("%s/Sev_%s_TaggingProbability_%s-times_log.pdf"%(direc_ol, severity, time), dpi = 300)                                                           
+                            plt.savefig("%s/Sev_%s_%s_%s-times_log.png"%(direc_ol, severity, outFileVarName, time), dpi = 100)
+                            plt.savefig("%s/Sev_%s_%s_%s-times_log.pdf"%(direc_ol, severity, outFileVarName, time), dpi = 300)                                                           
 
                             plt.close()                     
 
                             # save values as parquet files to eventually plot together with other datasets / working points   
 
-                            parquetOutDir = "output/%s/TaggingProbability/"%(sub_dataset)
+                            parquetOutDir = "output/%s/%s/"%(sub_dataset, outFileVarName)
                             os.system("mkdir -p %s"%(parquetOutDir))
-                            outName_yVals = "%s/TaggingProbability_Sev_%s_%s-times_values.parquet"%(parquetOutDir, severity, time)
-                            outName_yUnc = "%s/TaggingProbability_Sev_%s_%s-times_statuncer.parquet"%(parquetOutDir, severity, time)
+                            outName_yVals = "%s/%s_Sev_%s_%s-times_values.parquet"%(parquetOutDir, outFileVarName, severity, time)
+                            outName_yUnc = "%s/%s_Sev_%s_%s-times_statuncer.parquet"%(parquetOutDir, outFileVarName, severity, time)
 
                             yVals_table = pa.table({"data": yVals_before_mask})
                             yUnc_table = pa.table({"data": yUnc_before_mask})
@@ -495,9 +499,9 @@ if(__name__ == '__main__'):
             ADCToGeV = 1 # if true, divide x axis values by 2 to get GeV 
 
             # plot average lines on same plots
-            avgPlotVars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "oneMinusEmuOverRealvstwrADCCourseBinningZoomed", "EnergyVsTimeOccupancy"]
+            avgPlotVars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "oneMinusEmuOverRealvstwrADCCourseBinningZoomed", "EnergyVsTimeOccupancy", "EmulEnergyVsTimeOccupancy"]
             if(variable in avgPlotVars):
-          
+            
                 for time in times:
                     print("On time:",time)
                     for sev_i, severity in enumerate(severities):
@@ -522,7 +526,7 @@ if(__name__ == '__main__'):
                         lower = axarr[1]
 
                         for direc_i, direc in enumerate(directories):
-                            if(variable == "EnergyVsTimeOccupancy"):
+                            if(variable == "EnergyVsTimeOccupancy" or variable == "EmulEnergyVsTimeOccupancy"):
                                 pass 
                             else: 
                                 WP, PF, RECO = GetWorkingPointLabels(direc)                        
@@ -533,13 +537,24 @@ if(__name__ == '__main__'):
                                 sub_dataset = "PilotBeam2021"
                             else: sub_dataset = dataset 
 
+                            # if(sub_dataset == "Run352912"): 
+                                # print("Skipping ",sub_dataset)
+                                # continue 
+
+                            varFileNameDict = {
+                                "EnergyVsTimeOccupancy" : "TaggingProbability",
+                                "EmulEnergyVsTimeOccupancy" : "EmulatedTaggingProbability"                                
+                            }
+
+                            outFileVarName = varFileNameDict[variable]
+
                             # plot from previously saved values so that you don't need to reproduce plots by running over all files again 
                             if(fromParquet): 
                                 # currently different treatment for EnergyVsTimeOccupancy w.r.t. oneMinus... vars.
-                                if(variable == "EnergyVsTimeOccupancy"):
-                                    parquetOutDir = "output/%s/TaggingProbability/"%(sub_dataset)
-                                    averages_path = "%s/TaggingProbability_Sev_%s_%s-times_values.parquet"%(parquetOutDir, severity, time)
-                                    yUnc_path = "%s/TaggingProbability_Sev_%s_%s-times_statuncer.parquet"%(parquetOutDir, severity, time)
+                                if(variable == "EnergyVsTimeOccupancy" or variable == "EmulEnergyVsTimeOccupancy"):
+                                    parquetOutDir = "output/%s/%s/"%(sub_dataset, outFileVarName)
+                                    averages_path = "%s/%s_Sev_%s_%s-times_values.parquet"%(parquetOutDir, outFileVarName, severity, time)
+                                    yUnc_path = "%s/%s_Sev_%s_%s-times_statuncer.parquet"%(parquetOutDir, outFileVarName, severity, time)
 
                                 else:
                                     parquetOutDir = "output/%s/%s_%s_%s_%s/"%(dataset, variable, WP, PF, RECO)
@@ -569,7 +584,7 @@ if(__name__ == '__main__'):
 
                             xbins, ybins = GetBins(variable, dataset)
 
-                            if(variable == "EnergyVsTimeOccupancy"): 
+                            if(variable == "EnergyVsTimeOccupancy" or variable == "EmulEnergyVsTimeOccupancy"): 
                                 energy_bins = ybins
                                 ol = "/eos/user/a/atishelm/www/EcalL1Optimization/{dataset}/".format(dataset=dataset)                    
                             else: 
@@ -580,6 +595,7 @@ if(__name__ == '__main__'):
 
                             if(severity == "four"):
                                 reBins = [[1,32],[33,255]]
+                                # reBins = [[1,21], [22,23], [24,32], [33,255]]
                             else: 
                                 reBins = [[5,32],[33,255]]                            
 
@@ -669,7 +685,6 @@ if(__name__ == '__main__'):
                             exec("y_vals_%s = np.copy(averages)"%(direc_i)) # save values for ratio later 
                             exec("y_Unc_%s = np.copy(yUnc)"%(direc_i)) # save values for ratio later 
 
-
                         EB_LABEL_XMIN = 0.18
                         if(severity == "zero" and time == "inTime"):
                             EB_LABEL_XMIN = 0.16 
@@ -699,7 +714,8 @@ if(__name__ == '__main__'):
                         yLabelDict = {
                             "oneMinusEmuOverRealvstwrADCCourseBinning" : "Average $E_{T}$ fraction subtracted",
                             "oneMinusEmuOverRealvstwrADCCourseBinningZoomed": "Average $E_{T}$ fraction subtracted",
-                            "EnergyVsTimeOccupancy" : "Tagging probability"
+                            "EnergyVsTimeOccupancy" : "Tagging probability",
+                            "EmulEnergyVsTimeOccupancy" : "Emulated tagging probability"
                         }                        
 
                         yLabel = yLabelDict[variable]
@@ -751,8 +767,6 @@ if(__name__ == '__main__'):
                                 abs_error = ratio_val * float(rel_error)
                                 ratio_unc.append(abs_error)                        
 
-                        print("ratio_unc:",ratio_unc)
-
                         if(error):
                             lower.scatter(x = centered_energy_bins, y = ratio_vals, label = plotLabel, s = 15) ### [:-7] = remove the final 7 points (hack)
                             lower.errorbar(x = centered_energy_bins, y = ratio_vals, xerr = xerr, yerr = ratio_unc, fmt = " ", color = 'C0')  
@@ -791,16 +805,16 @@ if(__name__ == '__main__'):
                         
                         # fig.tight_layout()
                         plt.tight_layout()
-                        plt.savefig("%s/Sev_%s_%s_Average_%s_linear.png"%(ol, severity, time, varLabel), dpi = 300)
-                        plt.savefig("%s/Sev_%s_%s_Average_%s_linear.pdf"%(ol, severity, time, varLabel), dpi = 300)   
+                        plt.savefig("%s/Sev_%s_%s_Average_%s_linear.png"%(ol, severity, time, outFileVarName), dpi = 300)
+                        plt.savefig("%s/Sev_%s_%s_Average_%s_linear.pdf"%(ol, severity, time, outFileVarName), dpi = 300)   
 
                         if(log):
                             upper.set_ylim(0.00001, 1)
                             upper.set_yscale('log')  
                             # fig.tight_layout()
                             plt.tight_layout()
-                            plt.savefig("%s/Sev_%s_%s_Average_%s_log.png"%(ol, severity, time, varLabel), dpi = 300)
-                            plt.savefig("%s/Sev_%s_%s_Average_%s_log.pdf"%(ol, severity, time, varLabel), dpi = 300)    
+                            plt.savefig("%s/Sev_%s_%s_Average_%s_log.png"%(ol, severity, time, outFileVarName), dpi = 300)
+                            plt.savefig("%s/Sev_%s_%s_Average_%s_log.pdf"%(ol, severity, time, outFileVarName), dpi = 300)    
                         plt.close()
 
     print("DONE")

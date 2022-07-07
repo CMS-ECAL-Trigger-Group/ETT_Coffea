@@ -12,6 +12,8 @@ from matplotlib.colors import LogNorm, SymLogNorm
 import copy 
 import matplotlib as mpl
 
+import matplotlib.ticker as plticker
+
 def GetWorkingPointLabels(direc_):
     if("0p5Prime" in direc_):
         WP = "MinDelta0p5prime"
@@ -136,7 +138,8 @@ def GetBins(varLabel_, dataset_):
             "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 256, 256]], # full ET range 
             "EnergyVsTimeOccupancy_ratio" : [[-50, 50, 100],[0, 35, 35]],
             "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], [0, 1.2, 48]],
-            "oneMinusEmuOverRealvstwrADCCourseBinningZoomed" : [[1, 41, 40], [0, 1.2, 48]]
+            "oneMinusEmuOverRealvstwrADCCourseBinningZoomed" : [[1, 41, 40], [0, 1.2, 48]],
+            "EmulEnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 256, 256]]
         }
     elif(dataset_ == "PilotBeam2021"):
         binDict = {
@@ -144,15 +147,20 @@ def GetBins(varLabel_, dataset_):
             "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 256, 256]], # full ET range 
             # "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 35, 35]], # shorter ET range 
             "EnergyVsTimeOccupancy_ratio" : [[-50, 50, 100],[0, 35, 35]],
-            "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1, 41, 40], [0, 1.2, 48]]
-        }
+            "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1, 41, 40], [0, 1.2, 48]],
+            # "EBOcc" : [[0, 80, 80], [-18, 18, 36]]
+            "EBOcc" : [[1, 73, 72], [-17, 18, 35]],
+            "EmulEnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 256, 256]]
+        }    
     elif(dataset_ == "Run352912"):
         binDict = {
             "realVsEmu" : [[0, 256, 256], [0, 256, 256]],
             "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 256, 256]], # Full ET range 
             # "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 35, 35]], # shorter ET range 
             "EnergyVsTimeOccupancy_ratio" : [[-50, 50, 100],[0, 35, 35]],
-            "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1, 41, 40], [0, 1.2, 48]]
+            "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1, 41, 40], [0, 1.2, 48]],
+            "EBOcc" : [[1, 73, 72], [-17, 18, 35]],
+            "EmulEnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 256, 256]]
         }
     elif(dataset_ == "2021_2022_900GeVCollisions"):
         binDict = {
@@ -160,9 +168,11 @@ def GetBins(varLabel_, dataset_):
             "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 256, 256]], # Full ET range 
             # "EnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 35, 35]], # shorter ET range 
             "EnergyVsTimeOccupancy_ratio" : [[-50, 50, 100],[0, 35, 35]],
-            "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1, 41, 40], [0, 1.2, 48]]
+            "oneMinusEmuOverRealvstwrADCCourseBinning" : [[1, 41, 40], [0, 1.2, 48]],
+            "EBOcc" : [[1, 73, 72], [-17, 18, 35]],
+            "EmulEnergyVsTimeOccupancy" : [[-50, 50, 100],[0, 256, 256]]
         }
-        
+
     xinfo = binDict[varLabel_][0]
     yinfo = binDict[varLabel_][1]
 
@@ -190,8 +200,9 @@ def GetPlotLabels(varLabel_):
         "EnergyVsTimeOccupancy" : ["time (ns)", r"Real data TP $E_{T}$ (ADC)"],
         "EnergyVsTimeOccupancy_ratio" : ["time (ns)", r"Real data TP $E_{T}$ (ADC)"],
         "oneMinusEmuOverRealvstwrADCCourseBinning" : [r"Real data TP $E_{T}$ (ADC)", "1 - (emu / real)"],
-        "oneMinusEmuOverRealvstwrADCCourseBinningZoomed" : [r"Real data TP $E_{T}$ (ADC)", "1 - (emu / real)"]
-
+        "oneMinusEmuOverRealvstwrADCCourseBinningZoomed" : [r"Real data TP $E_{T}$ (ADC)", "1 - (emu / real)"],
+        "EBOcc" : [r"i$\phi$", r"i$\eta$"],
+        "EmulEnergyVsTimeOccupancy" : ["time (ns)", r"Emulated TP $E_{T}$ (ADC)"]
     }
 
     return labelDict[varLabel_]     
@@ -264,7 +275,7 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
     cmap.set_under(color='white')     
     xbins, ybins = GetBins(variable_, dataset)
 
-    if(variable_ == "EnergyVsTimeOccupancy"):
+    if(variable_ == "EnergyVsTimeOccupancy" or variable_ == "EmulEnergyVsTimeOccupancy"):
         ymax = 35
         binWidth = 1 
         Values_array, ybins = SetYMax(Values_array, ymax, binWidth, ybins)      
@@ -336,16 +347,34 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
     fontsize = 18
     text_xmin = 0.14
     Add_CMS_Header(plt, ax, upperRightText, text_xmin, addLumi, lumi, fontsize, unit, sqrts)
+
+    # if(variable_ == "EBOcc"): # set finer grid to check each TT
+    #     intervals = 1
+    #     int_loc = plticker.MultipleLocator(base=intervals)    
+    #     ax.xaxis.set_major_locator(int_loc)
+    #     ax.yaxis.set_major_locator(int_loc)
+
+    #     # Add the grid
+    #     ax.grid(which='major', axis='both', linestyle='-')            
+
+    # else:
+    #     plt.grid()
+
     plt.grid()
+
+    # for slice_i, slice in enumerate(Values_array):
+    #     print("slice_i:",slice_i)
+    #     print("slice:",slice)
+
     addPlotText = 1 
 
     FGSelectionDict = {
         "all" : "",
         "Tagged" : "Tagged",
-        "ratio" : "Tagged/Total"
+        "ratio" : "Tagged/Total",
+        "DataNotEqEmul" : "Data != Emul",
+        "EmulTagged" : "Emulator tagged"
     }
-
-    fig.tight_layout()
 
     if(addPlotText):
         FGLabel = FGSelectionDict[FGSelection]
@@ -376,6 +405,7 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
     dpis = [50, 300]
     for f_i, fileType in enumerate(["png", "pdf"]):
         dpi = dpis[f_i]
+        fig.tight_layout()
         plt.savefig("{ol}/{variable_}_sev{severity}_{time}_{FGSelection}.{fileType}".format(ol=ol, variable_=variable_, severity=severity, time=time, FGSelection=FGSelection, fileType=fileType), dpi = dpi)
     plt.close()    
 
@@ -386,7 +416,7 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
     ybinVals = range(0, 1200, 25)
     ybinVals = [val/1000. for val in ybinVals] ##-- y bins (1 - emu/real)
 
-    # averageComputingVars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "oneMinusEmuOverRealvstwrADCCourseBinningZoomed", "EnergyVsTimeOccupancy"]
+    # averageComputingVars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "oneMinusEmuOverRealvstwrADCCourseBinningZoomed", "EnergyVsTimeOccupancy", "EmulEnergyVsTimeOccupancy"]
     averageComputingVars = ["oneMinusEmuOverRealvstwrADCCourseBinning", "oneMinusEmuOverRealvstwrADCCourseBinningZoomed"]
 
     if(variable_ in averageComputingVars):
@@ -395,13 +425,16 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
             ybinVals = [val/1000. for val in ybinVals] ##-- y bins (1 - emu/real)            
             averages, stdevs = ComputeAverages(xbins, Values_array, ybinVals)
             energy_bins = xbins 
-        elif(variable_ == "EnergyVsTimeOccupancy"): 
+        elif(variable_ == "EnergyVsTimeOccupancy" or variable_ == "EmulEnergyVsTimeOccupancy"): 
             # ybinVals = range(0, 1200, 25) # assuming y range 0 to 1.2 with 0.025 bin distance. Imagine passing these parameters as variables that could be specified every time the function is called. 
             # ybinVals = [val/1000. for val in ybinVals] ##-- y bins (1 - emu/real)         
             # ybinVals = range(0, 36, 1)
             ybinVals = range(0, 36, 1) # times 
             ybinVals = [val/1. for val in ybinVals] 
-            averages, stdevs = ComputeAverages(ybins, Values_array.transpose(1,0), ybinVals, ) # transpose to flip axes. 
+            # print("ybins:",ybins)
+            # print("vals:",Values_array.transpose(1,0))
+            # print("ybinVals:",ybinVals)
+            averages, stdevs = ComputeAverages(ybins, Values_array.transpose(1,0), ybinVals) # transpose to flip axes. 
             energy_bins = ybins 
 
         # Prepare figure and axes 
@@ -429,8 +462,6 @@ def MakeETTPlot(Values_array, variable_, severity, time, ol, upperRightText, dat
         error = 0
         log = 1
         xmin_, xmax_ = xbins[0], xbins[-1]
-
-        print("here")
 
         if(error):
             plt.scatter(x = centered_energy_bins, y = averages, label = "Severity = %s, %s"%(severity, time), s = 15)

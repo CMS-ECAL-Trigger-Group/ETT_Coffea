@@ -4,6 +4,11 @@ The purpose of this module is to submit condor jobs to run the ETT coffea produc
 Example commands:
 
 # 2022 900 GeV collisions data analysis:
+python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EmulEnergyVsTimeOccupancy  --tag=FewFiles -s
+python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EBOcc  --tag=220615_220151 -s
+python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EBOcc  --tag=FewFiles -s
+python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EBOcc  --tag=220615_220151 -s
+
 python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EnergyVsTimeOccupancy,realVsEmu  --tag=220615_220151 -s
 python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EnergyVsTimeOccupancy  --tag=FewFiles -s
 python3 RunProducer_Condor.py --direc="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/Run_352912/ETTAnalyzer_CMSSW_12_3_0_DoubleWeights/" --vars EnergyVsTimeOccupancy  --tag=oneFile -s
@@ -87,10 +92,9 @@ def main():
     options = parser.parse_args()
     vars = options.vars.split(',')
 
-    times = ["inTime", "Early", "Late", "VeryLate"]
-    # times = ["all"]
-    severities = ["all", "zero", "three", "four"]
-    FGSelections = ["all", "Tagged"] # all: all TPs. Tagged: FGbit=1
+    severities = ["zero", "four"]
+    times = ["all", "inTime", "VeryLate"]
+    FGSelections = ["all", "EmulTagged"] # all: all TPs. Tagged: FGbit=1. DataNotEqEmul: Entries in which the data TP does not equal the Emul TP energy.
 
     indir = "{}/{}/".format(options.direc, options.tag)
     samples = os.listdir(indir)

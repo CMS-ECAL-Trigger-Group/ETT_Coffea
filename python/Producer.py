@@ -131,7 +131,6 @@ class HistProducer(ProcessorABC):
 
 class ETT_NTuple(HistProducer):
 
-    addRunSelection = 0 
     SelectionsToRun = []
 
     sevDict = {
@@ -140,11 +139,9 @@ class ETT_NTuple(HistProducer):
         "four" : "4"
     }
 
-    severities = ["all", "zero", "three", "four"]
-    # times = ["all", "inTime", "Early", "Late", "VeryLate"]
-    times = ["inTime", "Early", "Late", "VeryLate"]
-    # times = ["all"]
-    FGSelections = ["all", "Tagged"] # all: all TPs. Tagged: FGbit=1
+    severities = ["zero", "four"]
+    times = ["all", "inTime", "VeryLate"]
+    FGSelections = ["all", "EmulTagged"] # all: all TPs. Tagged: FGbit=1. DataNotEqEmul: Entries in which the data TP does not equal the Emul TP energy.
 
     for severity in severities:
         for time in times:
@@ -207,14 +204,14 @@ class ETT_NTuple(HistProducer):
         #     'axis': {'label': 'twrEmul3ADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}
         # },                 
 
-        'twrADC': {
-            'target': 'twrADC',
-            'name': 'twrADC', 
-            # 'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
-            # 'region': ['sevall_all', 'sevall_MostlyZeroed', 'sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
-            'region' : SelectionsToRun,
-            'axis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
-        }, 
+        # 'twrADC': {
+        #     'target': 'twrADC',
+        #     'name': 'twrADC', 
+        #     # 'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     # 'region': ['sevall_all', 'sevall_MostlyZeroed', 'sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     'region' : SelectionsToRun,
+        #     'axis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+        # }, 
 
         # 'twrEmul3ADC': {
         #     'target': 'twrADC',
@@ -262,18 +259,30 @@ class ETT_NTuple(HistProducer):
         # Useful for exploring the data and computing tagging vs. ET 
         # """
 
-        'EnergyVsTimeOccupancy': {
-            'target_x' : 'time',
-            'target_y' : 'twrADC',
-            'name': 'EnergyVsTimeOccupancy', 
-            'region' : SelectionsToRun,
-            'axes' : {
-                'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
-                'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256} # Full ET range           
-                # 'yaxis': {'label': 'twrADC', 'n_or_arr': 35, 'lo': 0, 'hi' : 35} # Low ET range                 
-            }
+        # 'EnergyVsTimeOccupancy': {
+        #     'target_x' : 'time',
+        #     'target_y' : 'twrADC',
+        #     'name': 'EnergyVsTimeOccupancy', 
+        #     'region' : SelectionsToRun,
+        #     'axes' : {
+        #         'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
+        #         'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256} # Full ET range           
+        #         # 'yaxis': {'label': 'twrADC', 'n_or_arr': 35, 'lo': 0, 'hi' : 35} # Low ET range                 
+        #     }
 
-        },  
+        # },  
+
+         'EmulEnergyVsTimeOccupancy': {
+             'target_x' : 'time',
+             'target_y' : 'twrEmul3ADC',
+             'name': 'EmulEnergyVsTimeOccupancy', 
+             'region' : SelectionsToRun,
+             'axes' : {
+                 'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
+                 'yaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256} # Full ET range           
+             }
+
+        },          
 
         # """
         # Useful for evaluating effect of emulation, e.g. double weights, on digis
@@ -313,21 +322,19 @@ class ETT_NTuple(HistProducer):
 
         # },          
 
-        # 'EBOcc': {
-        #     'target_x' : 'iphi',
-        #     'target_y' : 'ieta',
-        #     'name': 'EBOcc', 
-        #     'region' : ['all'],
-        #     # 'region' : ['sevzero_all', 'sevzero_MostlyZeroed',
-        #     #             'sevthree_all', 'sevthree_MostlyZeroed',
-        #     #             'sevfour_all', 'sevfour_MostlyZeroed'
-        #     #            ],
-        #     'axes' : {
-        #         'xaxis': {'label': 'iphi', 'n_or_arr': 80, 'lo': 0, 'hi': 80},
-        #         'yaxis': {'label': 'ieta', 'n_or_arr': 36, 'lo': -18, 'hi': 18}                
-        #     }
+        #'EBOcc': {
+       #     'target_x' : 'iphi',
+      #      'target_y' : 'ieta',
+     #       'name': 'EBOcc', 
+    #        'region' : SelectionsToRun,
+   #         'axes' : {
+  #              'xaxis': {'label': 'iphi', 'n_or_arr': 72, 'lo': 1, 'hi': 73}, # iphi in L1 coordinates
+ #               'yaxis': {'label': 'ieta', 'n_or_arr': 35, 'lo': -17, 'hi': 18} # EB only                 
+                # 'xaxis': {'label': 'iphi', 'n_or_arr': 80, 'lo': 0, 'hi': 80},
+                # 'yaxis': {'label': 'ieta', 'n_or_arr': 36, 'lo': -18, 'hi': 18}                
+#            }
 
-        # },          
+        #},          
 
         # 'realVsEmu': {
         #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
@@ -345,6 +352,12 @@ class ETT_NTuple(HistProducer):
 
     }
 
+    severities = ["zero", "four"]
+    times = ["all", "inTime", "VeryLate"]
+    FGSelections = ["all", "EmulTagged"] # all: all TPs. Tagged: FGbit=1. DataNotEqEmul: Entries in which the data TP does not equal the Emul TP energy.
+
+    # decide how to do ttf removal, either by data or emulated TPs. 
+
     time_regions = {
         "all" : ["event.time != -999"],
         "inTime" : ["event.time < 3", "event.time >= -3"],
@@ -353,38 +366,14 @@ class ETT_NTuple(HistProducer):
         "VeryLate" : ["event.time >= 10"]
     }
 
-    severities = ["all", "zero", "three", "four"]
-
     sevDict = {
         "all" : "all",
         "zero" : "0",
         "three" : "3",
         "four" : "4"
     }
-    # times = ["all", "inTime", "Early", "Late", "VeryLate"]
-    times = ["inTime", "Early", "Late", "VeryLate"]
-    # times = ["all"]
-    FGSelections = ["all", "Tagged"] # all: all TPs. Tagged: FGbit=1
 
     # Define selections based on event values 
-    selection = {}
-
-    # basic ETT TP cleaning 
-    """
-    selection = {
-        "clean_all" : ["event.time != -999", # TP matched to (highest energy) rec hit in tower 
-                   "event.ttFlag != 4", # TP does not have TTF4. TTF4 is usually a masked or problematic TP 
-        ],
-        "clean_tagged" : [
-            "event.time != -999",
-            "event.ttFlag != 4"
-            #"event.FineGrainBit == 1" # tagged by double weights in tagging mode 
-        ]
-    }
-    """
-
-    # based on severity and time 
-    #"""
     selection = {}
 
     for severity in severities:
@@ -393,7 +382,11 @@ class ETT_NTuple(HistProducer):
             for FGSel in FGSelections: 
                 selec_selections = []
                 if(FGSel == "Tagged"):
-                    selec_selections.append("event.FineGrainBit == 1")
+                    selec_selections.append("event.FineGrainBit == 1") # Tagged via FGbit == 1 in the data 
+                if(FGSel == "DataNotEqEmul"):
+                    selec_selections.append("event.twrADC != event.twrEmul3ADC")
+                if(FGSel == "EmulTagged"): 
+                    selec_selections.append("event.rawTPEmulFineGrainBit3 == 1") # Tagged via FGbit == 1 in the emulator 
                 selec_selections.append("event.ttFlag != 4") # add TTF4 cleaning for all severities, times. 
                 selec_selections.append("event.time != -999") # don't include TPs which were not matched to a recHit 
                 #selec_selections.append("event.twrADC != 0") # for anything with dividing, don't include TP = 0 ET entries
@@ -401,15 +394,11 @@ class ETT_NTuple(HistProducer):
                     selec_selections.append("event.sevlv == %s"%(sevNum))
                 else:
                     selec_selections.append("event.sevlv != -999")
-                # if(addRunSelection): 
-                #     print("Adding run selection")
-                #     selec_selections.append("event.runNb == 324725")
                 timeSels = time_regions[time]
                 for timeSel in timeSels:
                     selec_selections.append(timeSel)
                 Selection_Name = "sev%s_%s_%s"%(severity, time, FGSel)
                 selection[Selection_Name] = (selec_selections)
-    #""" 
 
     def weighting(self, event: LazyDataFrame):
         weight = 1.0
